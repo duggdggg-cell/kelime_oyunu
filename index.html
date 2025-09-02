@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <title>Kelime Oyunu</title>
+  <script src="/socket.io/socket.io.js"></script>
+</head>
+<body>
+  <h1>Kelime Oyunu (Multiplayer)</h1>
+  <input id="odaKodu" placeholder="Oda Kodu">
+  <button onclick="odaKatıl()">Odaya Katıl</button>
+  <button onclick="oyunuBaslat()">Oyunu Başlat</button>
+
+  <h2 id="ekran"></h2>
+
+  <script>
+    const socket = io();
+    let oda = "";
+
+    function odaKatıl() {
+      oda = document.getElementById("odaKodu").value;
+      socket.emit("odaKatıl", oda);
+      document.getElementById("ekran").innerText = "Odaya katıldınız: " + oda;
+    }
+
+    function oyunuBaslat() {
+      if (oda) socket.emit("oyunuBaslat", oda);
+    }
+
+    socket.on("rol", (data) => {
+      if (data.rol === "IMPOSTER") {
+        document.getElementById("ekran").innerText = "IMPOSTER";
+      } else {
+        document.getElementById("ekran").innerText = "Kelime: " + data.kelime;
+      }
+    });
+  </script>
+</body>
+</html>
