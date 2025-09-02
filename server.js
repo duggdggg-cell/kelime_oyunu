@@ -8,7 +8,19 @@ const io = new Server(server);
 
 app.use(express.static(__dirname)); // index.html'i sunmak için
 
-const kelimeler = ["Elma", "Bilgisayar", "Masa", "Futbol", "Araba", "Kedi", "Deniz", "Kalem", "Telefon"];
+const kelimeler = [
+"Elma","Bilgisayar","Masa","Futbol","Araba","Kedi","Deniz","Kalem","Telefon",
+"Kitap","Ayakkabı","Bardak","Çanta","Saat","Gözlük","Köpek","Bisiklet","Şemsiye",
+"Kalp","Yıldız","Bulut","Dağ","Nehir","Orman","Ev","Oda","Kapı","Pencere",
+"Televizyon","Radio","Mikrofon","Buzdolabı","Fırın","Tencere","Tabak","Kaşık",
+"Çatal","Yastık","Battaniye","Havlu","Makas","Defter","Silgi","Kurşun Kalem",
+"Tüy Kalem","Kalemtraş","Tahta","Sandalye","Koltuk","Buz","Kum","Çiçek","Ağaç",
+"Top","Raket","Ay","Güneş","Yaprak","Kuş","Balık","Yılan","Aslan","Kaplan",
+"Fil","Zebra","Maymun","Kelebek","Arı","Karınca","Kuşkonmaz","Havuç","Domates",
+"Patates","Soğan","Sarımsak","Peynir","Süt","Yoğurt","Ekmek","Makarna","Pilav",
+"Çorap","Pantolon","Gömlek","Ceket","Mont","Şapka","Eldiven","Atkı","Çorba","Tatlı"
+];
+
 let odalar = {};
 
 io.on("connection", (socket) => {
