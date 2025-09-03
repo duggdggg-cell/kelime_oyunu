@@ -1,5 +1,5 @@
 {
-  "name": "kelime-oyunu",
+  "name": "kelime_oyunu",
   "version": "1.0.0",
   "main": "server.js",
   "scripts": {
