@@ -8,9 +8,7 @@ const io = new Server(server);
 
 app.use(express.static(__dirname));
 
-// Örnek 700+ kelime, kendi listenle değiştir
 const kelimeler = ["Elma","Bilgisayar","Masa","Futbol","Araba","Kedi","Deniz","Kalem","Telefon"];
-
 let odalar = {};
 let oylar = {};
 
@@ -73,4 +71,4 @@ io.on("connection", (socket) => {
   });
 });
 
-server.listen(3000, () => console.log("Sunucu 3000 portunda çalışıyor..."));
+server.listen(process.env.PORT || 3000, () => console.log("Sunucu çalışıyor..."));
