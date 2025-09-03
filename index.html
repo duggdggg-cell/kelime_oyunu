@@ -56,4 +56,44 @@ function odaKatıl(){
 
 function oyunuBaslat(){ socket.emit("oyunuBaslat",odaKodu); }
 
-socket.on("rol",({rol,kel
+socket.on("rol",({rol,kelime})=>{
+  document.getElementById("rol").textContent=rol;
+  document.getElementById("kelime").textContent = rol==="OYUNCU"?kelime:"IMPOSTER";
+});
+
+socket.on("oyuncuGuncelle",(oyuncular)=>{
+  const ul=document.getElementById("oyuncular");
+  ul.innerHTML="";
+  oyuncular.forEach(o=>{
+    const li=document.createElement("li");
+    li.textContent=o.isim;
+    li.dataset.id=o.id;
+    ul.appendChild(li);
+  });
+});
+
+function oyVer(id){
+  if(!secilenOyHedef){
+    secilenOyHedef=id;
+    document.querySelectorAll("#oySonucu li").forEach(li=>{
+      li.style.color = li.dataset.id===id?"blue":"#333";
+    });
+    socket.emit("oyVer",{odaKodu,hedefId:id});
+  }
+}
+
+socket.on("oySonucu",({oySonuclari})=>{
+  const ul=document.getElementById("oySonucu");
+  ul.innerHTML="";
+  oySonuclari.forEach(o=>{
+    const li=document.createElement("li");
+    li.textContent=`${o.isim}: ${o.oy} oy`;
+    li.dataset.id=o.id;
+    li.onclick=()=>oyVer(o.id);
+    ul.appendChild(li);
+  });
+});
+</script>
+
+</body>
+</html>
