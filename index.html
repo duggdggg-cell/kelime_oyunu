@@ -4,36 +4,89 @@
   <meta charset="UTF-8">
   <title>Kelime Oyunu</title>
   <script src="/socket.io/socket.io.js"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap');
+    body {
+      font-family: 'Roboto', sans-serif;
+      background: linear-gradient(to right, #6a11cb, #2575fc);
+      margin: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      color: #fff;
+    }
+    .ekran { display: none; text-align: center; background: rgba(255,255,255,0.95); color: #333; padding: 30px; border-radius: 15px; box-shadow: 0px 4px 20px rgba(0,0,0,0.3); width: 450px; max-width: 90%; animation: fadeIn 0.5s ease-in-out; }
+    .aktif { display: block; }
+    input, button { padding: 12px; margin: 10px 0; width: 80%; border-radius: 8px; border: 1px solid #ccc; font-size: 16px; transition: all 0.3s ease; }
+    button { background: #2575fc; color: white; cursor: pointer; font-weight: bold; }
+    button:hover { background: #6a11cb; transform: scale(1.05); }
+    #rol { font-size: 24px; font-weight: bold; margin-top: 20px; }
+    #kelime { font-size: 28px; color: green; margin-top: 15px; font-weight: bold; }
+    #oyuncular, #oySonucu { margin-top: 20px; padding: 0; list-style: none; display: flex; flex-wrap: wrap; justify-content: center; }
+    #oyuncular li, #oySonucu li { background: #2575fc; color: white; padding: 8px 12px; margin: 5px; border-radius: 12px; font-weight: 500; transition: transform 0.3s; }
+    #oyuncular li:hover, #oySonucu li:hover { transform: scale(1.1); }
+    @keyframes fadeIn { 0% {opacity: 0; transform: translateY(-20px);} 100% {opacity: 1; transform: translateY(0);} }
+  </style>
 </head>
 <body>
-  <h1>Kelime Oyunu (Multiplayer)</h1>
-  <input id="odaKodu" placeholder="Oda Kodu">
-  <button onclick="odaKatıl()">Odaya Katıl</button>
-  <button onclick="oyunuBaslat()">Oyunu Başlat</button>
+  <div id="girisEkrani" class="ekran aktif">
+    <h2>Kelime Oyunu</h2>
+    <input id="isim" placeholder="İsminizi girin">
+    <input id="odaKodu" placeholder="Oda kodu girin">
+    <button onclick="odaKatıl()">Odaya Katıl</button>
+    <button onclick="oyunuBaslat()">Oyunu Başlat</button>
+  </div>
 
-  <h2 id="ekran"></h2>
+  <div id="oyunEkrani" class="ekran">
+    <h2>Rolünüz: <span id="rol"></span></h2>
+    <div id="kelime"></div>
+    <h3>Oyuncular</h3>
+    <ul id="oyuncular"></ul>
+    <h3>Oy Sonucu</h3>
+    <ul id="oySonucu"></ul>
+  </div>
 
   <script>
     const socket = io();
-    let oda = "";
+    let odaKodu = "";
+    let isim = "";
 
     function odaKatıl() {
-      oda = document.getElementById("odaKodu").value;
-      socket.emit("odaKatıl", oda);
-      document.getElementById("ekran").innerText = "Odaya katıldınız: " + oda;
+      isim = document.getElementById("isim").value.trim();
+      odaKodu = document.getElementById("odaKodu").value.trim();
+      if(!isim || !odaKodu){ alert("Lütfen isim ve oda kodu girin!"); return; }
+      socket.emit("odaKatıl",{odaKodu,isim});
+      document.getElementById("girisEkrani").classList.remove("aktif");
+      document.getElementById("oyunEkrani").classList.add("aktif");
     }
 
-    function oyunuBaslat() {
-      if (oda) socket.emit("oyunuBaslat", oda);
-    }
+    function oyunuBaslat(){ socket.emit("oyunuBaslat",odaKodu); }
 
-    socket.on("rol", (data) => {
-      if (data.rol === "IMPOSTER") {
-        document.getElementById("ekran").innerText = "IMPOSTER";
-      } else {
-        document.getElementById("ekran").innerText = "Kelime: " + data.kelime;
-      }
+    socket.on("rol",(data)=>{
+      document.getElementById("rol").innerText=data.rol;
+      document.getElementById("rol").style.color=data.rol==="IMPOSTER"?"red":"blue";
+      document.getElementById("kelime").innerText=data.kelime?`Kelimeniz: ${data.kelime}`:"";
+    });
+
+    socket.on("oyuncuListesi",(oyuncular)=>{
+      const ul=document.getElementById("oyuncular");
+      ul.innerHTML="";
+      oyuncular.forEach(o=>{
+        const li=document.createElement("li");
+        li.textContent=o.isim;
+        ul.appendChild(li);
+      });
+    });
+
+    socket.on("oySonucu",({sayim,oyuncular})=>{
+      const ul=document.getElementById("oySonucu");
+      ul.innerHTML="";
+      oyuncular.forEach(o=>{
+        const li=document.createElement("li");
+        li.textContent=`${o.isim}: ${sayim[o.id]||0} oy`;
+        ul.appendChild(li);
+      });
     });
   </script>
-</body>
-</html>
+</
