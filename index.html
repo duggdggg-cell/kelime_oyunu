@@ -16,7 +16,7 @@
       height: 100vh;
       color: #fff;
     }
-    .ekran { display: none; text-align: center; background: rgba(255,255,255,0.95); color: #333; padding: 30px; border-radius: 15px; box-shadow: 0px 4px 20px rgba(0,0,0,0.3); width: 450px; max-width: 90%; animation: fadeIn 0.5s ease-in-out; }
+    .ekran { display: none; text-align: center; background: rgba(255,255,255,0.95); color: #333; padding: 30px; border-radius: 15px; box-shadow: 0px 4px 20px rgba(0,0,0,0.3); width: 450px; max-width: 90%; animation: fadeIn 0.5s ease-in-out; position: relative; }
     .aktif { display: block; }
     input, button { padding: 12px; margin: 10px 0; width: 80%; border-radius: 8px; border: 1px solid #ccc; font-size: 16px; transition: all 0.3s ease; }
     button { background: #2575fc; color: white; cursor: pointer; font-weight: bold; }
@@ -26,6 +26,7 @@
     #oyuncular, #oySonucu { margin-top: 20px; padding: 0; list-style: none; display: flex; flex-wrap: wrap; justify-content: center; }
     #oyuncular li, #oySonucu li { background: #2575fc; color: white; padding: 8px 12px; margin: 5px; border-radius: 12px; font-weight: 500; transition: transform 0.3s; }
     #oyuncular li:hover, #oySonucu li:hover { transform: scale(1.1); }
+    #baslatBtn { position: absolute; bottom: 15px; right: 15px; display: none; width: auto; padding: 10px 20px; }
     @keyframes fadeIn { 0% {opacity: 0; transform: translateY(-20px);} 100% {opacity: 1; transform: translateY(0);} }
   </style>
 </head>
@@ -35,7 +36,7 @@
     <input id="isim" placeholder="İsminizi girin">
     <input id="odaKodu" placeholder="Oda kodu girin">
     <button onclick="odaKatıl()">Odaya Katıl</button>
-    <button onclick="oyunuBaslat()">Oyunu Başlat</button>
+    <button id="baslatBtn" onclick="oyunuBaslat()">Oyunu Başlat</button>
   </div>
 
   <div id="oyunEkrani" class="ekran">
@@ -56,9 +57,13 @@
       isim = document.getElementById("isim").value.trim();
       odaKodu = document.getElementById("odaKodu").value.trim();
       if(!isim || !odaKodu){ alert("Lütfen isim ve oda kodu girin!"); return; }
+
       socket.emit("odaKatıl",{odaKodu,isim});
       document.getElementById("girisEkrani").classList.remove("aktif");
       document.getElementById("oyunEkrani").classList.add("aktif");
+
+      // Odaya katıldıktan sonra sağ alt köşede butonu göster
+      document.getElementById("baslatBtn").style.display = "block";
     }
 
     function oyunuBaslat(){ socket.emit("oyunuBaslat",odaKodu); }
@@ -89,4 +94,5 @@
       });
     });
   </script>
-</
+</body>
+</html>
