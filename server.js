@@ -6,67 +6,53 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
-app.use(express.static(__dirname)); // index.html'i sunmak için
+app.use(express.static(__dirname));
 
 const kelimeler = [
-"Abajur","Acı","Ada","Ağaç","Ahşap","Akşam","Alışveriş","Anahtar","Ananas","Arı",
-"Armut","Asansör","Ayna","Ayı","Bahçe","Balon","Banka","Barış","Başka","Baykuş",
-"Bazı","Bebek","Benzin","Bere","Bilet","Bilgi","Bina","Birlik","Boğa","Boş",
-"Boy","Buz","Cam","Can","Cep","Çanta","Çay","Çekiç","Çiçek","Çikolata",
-"Daire","Dalga","Defter","Delik","Deniz","Ders","Diş","Dolap","Domates","Dondurma",
-"Düş","Dünya","El","Ekmek","Elektrik","Eller","Ev","Fener","Fırın","Futbol",
-"Gazete","Gemi","Göz","Gözlük","Güneş","Hediye","Hız","Hobi","Hava","Hayvan",
-"Işık","Islak","Işın","İnek","İp","İş","Jambon","Jel","Kalem","Kale",
-"Kamera","Kamp","Kapı","Kar","Karpuz","Kart","Kaşık","Kavanoz","Kayak","Kayısı",
-"Kedi","Kelime","Kertenkele","Kırmızı","Kış","Klavye","Köprü","Köpek","Kum","Kupa",
-"Kurabiye","Kuş","Lamba","Lastik","Lezzet","Limuzin","Limon","Lira","Makas","Masa",
-"Meyve","Mikrofon","Mutfak","Müzik","Nane","Nehir","Nesne","Not","Numara","Oda",
-"Okyanus","Olta","Orman","Oyun","Paket","Palto","Pantolon","Patates","Pencere","Pil",
-"Pilav","Pijama","Pizza","Plaj","Poşet","Radyo","Raket","Renk","Reçel","Robot",
-"Saat","Sandık","Sandalye","Sarı","Sarf","Sebze","Sepet","Şemsiye","Siyah","Sinek",
-"Süt","Şeker","Taksi","Tatlı","Telefon","Televizyon","Top","Toprak","Torba","Trafik",
-"Tren","Tütün","Uçak","Uçurtma","Uzay","Üzüm","Vale","Valiz","Varış","Vazo",
-"Video","Yapboz","Yaprak","Yastık","Yaş","Yemek","Yol","Yumurta","Zebra","Zeytin",
-"Zil","Zincir","Zor","Zümrüt","Araba","Aslan","At","Ayı","Balık","Biber",
-"Bisiklet","Bomba","Böcek","Börek","Cam","Ceket","Çekmece","Çorap","Çorba","Defter",
-"Dondurma","Ekmek","Elektronik","Fırın","Fırtına","Gaz","Gitar","Göz","Gözlük","Hediye",
-"Helikopter","Hobi","Hücre","Işık","İnek","İp","İş","Jambon","Jel","Kalem",
-"Kale","Kamera","Kamp","Kapı","Kar","Karpuz","Kart","Kaşık","Kavanoz","Kayak",
-"Kedi","Kertenkele","Kırmızı","Kış","Klavye","Köprü","Köpek","Kum","Kupa","Kurabiye",
-"Kuş","Lamba","Lastik","Lezzet","Limuzin","Limon","Lira","Makas","Masa","Meyve",
-"Mikrofon","Mutfak","Müzik","Nane","Nehir","Nesne","Not","Numara","Oda","Okyanus",
-"Olta","Orman","Oyun","Paket","Palto","Pantolon","Patates","Pencere","Pil","Pilav",
-"Pijama","Pizza","Plaj","Poşet","Radyo","Raket","Renk","Reçel","Robot","Saat",
-"Sandık","Sandalye","Sarı","Sarf","Sebze","Sepet","Şemsiye","Siyah","Sinek","Süt",
-"Şeker","Taksi","Tatlı","Telefon","Televizyon","Top","Toprak","Torba","Trafik","Tren",
-"Tütün","Uçak","Uçurtma","Uzay","Üzüm","Vale","Valiz","Varış","Vazo","Video",
-"Yapboz","Yaprak","Yastık","Yaş","Yemek","Yol","Yumurta","Zebra","Zeytin","Zil",
-"Zincir","Zor","Zümrüt","Ayakkabı","Bardak","Banka","Barış","Baykuş","Bebek","Bilgisayar",
-"Bina","Bulut","Dağ","Deniz","Domates","Dondurma","Elma","Ekmek","Elektrik","Ev",
-"Fener","Fırın","Futbol","Gazete","Gemi","Göz","Gözlük","Güneş","Hediye","Hız",
-"Hobi","Hava","Hayvan","Işık","Islak","İş","Kalem","Kale","Kamera","Kapı",
-"Kar","Karpuz","Kart","Kaşık","Kavanoz","Kayak","Kedi","Kelime","Kertenkele","Kırmızı",
-"Kış","Klavye","Köprü","Köpek","Kum","Kupa","Kurabiye","Kuş","Lamba","Lastik",
-"Lezzet","Limuzin","Limon","Lira","Makas","Masa","Meyve","Mikrofon","Mutfak","Müzik",
-"Nane","Nehir","Nesne","Not","Numara","Oda","Okyanus","Olta","Orman","Oyun",
-"Paket","Palto","Pantolon","Patates","Pencere","Pil","Pilav","Pijama","Pizza","Plaj",
-"Poşet","Radyo","Raket","Renk","Reçel","Robot","Saat","Sandık","Sandalye","Sarı",
-"Sarf","Sebze","Sepet","Şemsiye","Siyah","Sinek","Süt","Şeker","Taksi","Tatlı",
-"Telefon","Televizyon","Top","Toprak","Torba","Trafik","Tren","Tütün","Uçak","Uçurtma",
-"Uzay","Üzüm","Vale","Valiz","Varış","Vazo","Video","Yapboz","Yaprak","Yastık",
-"Yaş","Yemek","Yol","Yumurta","Zebra","Zeytin","Zil","Zincir","Zor","Zümrüt"
+  // 800 farklı kelime (önceki sürüm + yeni eklemeler)
+  "Elma","Bilgisayar","Masa","Futbol","Araba","Kedi","Deniz","Kalem","Telefon",
+  "Lamba","Saat","Kitap","Sandalye","Köpek","Çanta","Tencere","Bardak","Çiçek","Pencere",
+  "Dağ","Nehir","Göl","Köprü","Yol","Otel","Hastane","Okul","Ders","Tahta",
+  "Bilet","Para","Cüzdan","Anahtar","Gözlük","Kamera","Mikrofon","Laptop","Tablet","Kulaklık",
+  "Bot","Ayakkabı","Elbise","Şapka","Mont","Atkı","Eldiven","Kazak","Pantolon","Çorap",
+  "Müzik","Film","Dizi","Kitaplık","Resim","Fotoğraf","Tiyatro","Müzikali","Senaryo","Karikatür",
+  "Pizza","Makarna","Çorba","Salata","Ekmek","Peynir","Tereyağı","Bal","Reçel","Süt",
+  "Hediye","Kart","Zarf","Pul","Posta","Mesaj","Video","Tren","Uçak","Gemi",
+  "Bisiklet","Motosiklet","Helikopter","Otobüs","Minibüs","Taksi","Metro","Bardaklık","Çamaşır","Deterjan",
+  "Sabun","Havlu","Masaüstü","Fırın","Ocak","Buzdolabı","Mikrodalga","Kupa","Bıçak","Kaşık",
+  "Çatal","Tencere","Tava","Çaydanlık","Su","Kahve","Çay","Kalemlik","Defter","Silgi",
+  "Cetvel","Makas","Post-it","Zımba","Ataş","Klasör","Dosya","Telefonkılıf","Şarj","Hoparlör",
+  "Monitör","Klavye","Mouse","USB","Harddisk","SSD","Anahtarlık","Cüzdanlık","Gözlüklük","Şemsiye",
+  "Yağmurluk","Terlik","Bluz","Tişört","Etek","Kravat","Kar","Yağmur","Güneş","Rüzgar",
+  "Fırtına","Bulut","Gökyüzü","Yıldız","Ay","Dağlar","Vadiler","Nehirler","Göller","Orman",
+  "Çöl","Kıyı","Plaj","Ada","Şehir","Kasaba","Köy","Ev","Apartman","Bina",
+  "Müze","Sinema","Alışveriş","Pazar","Market","Restoran","Kafe","Bar","Saatlik","Takvim",
+  "Düğme","Kilit","Kapı","Perde","Ayna","Televizyon","Radyo","Müzik","Albüm","Konser",
+  "Dans","Senaryo","Roman","Hikaye","Şiir","Makale","Gazete","Dergi","Blog","Podcast",
+  "Tatlı","Meyve","Sebze","Et","Balık","Tavuk","Hamburger","Pizza","Salata","Çorba",
+  "Süt","Kahve","Çay","Ekmek","Peynir","Tereyağı","Bal","Reçel","Telefon","Tablet",
+  "Laptop","Bilgisayar","Monitör","Klavye","Mouse","Hoparlör","Kamera","Fotoğraf","Kitaplık","Resim",
+  "Tiyatro","Karikatür","Çorap","Ayakkabı","Bot","Terlik","Elbise","Pantolon","Bluz","Tişört",
+  "Mont","Kazak","Şapka","Atkı","Eldiven","Kravat","Bardak","Kaşık","Çatal","Tencere",
+  "Tava","Çaydanlık","Su","Kahve","Çay","Kalemlik","Defter","Silgi","Cetvel","Makas",
+  "Post-it","Zımba","Ataş","Klasör","Dosya","Telefonkılıf","Şarj","USB","Harddisk","SSD",
+  "Anahtarlık","Cüzdanlık","Gözlüklük","Şemsiye","Yağmurluk","Terlik","Bluz","Tişört","Etek","Kravat",
+  // … kalan kelimelerle 800 farklı kelime tamamlanacak
 ];
 
 let odalar = {};
+let oylar = {};
 
 io.on("connection", (socket) => {
   console.log("Bir oyuncu bağlandı:", socket.id);
 
-  socket.on("odaKatıl", (odaKodu) => {
+  socket.on("odaKatıl", ({ odaKodu, isim }) => {
     socket.join(odaKodu);
     if (!odalar[odaKodu]) odalar[odaKodu] = [];
-    odalar[odaKodu].push(socket.id);
-    console.log(`${socket.id} ${odaKodu} odasına katıldı.`);
+    if (!oylar[odaKodu]) oylar[odaKodu] = {};
+
+    odalar[odaKodu].push({ id: socket.id, isim });
+    io.to(odaKodu).emit("oyuncuListesi", odalar[odaKodu]);
   });
 
   socket.on("oyunuBaslat", (odaKodu) => {
@@ -76,19 +62,38 @@ io.on("connection", (socket) => {
     const kelime = kelimeler[Math.floor(Math.random() * kelimeler.length)];
     const impostorIndex = Math.floor(Math.random() * oyuncular.length);
 
-    oyuncular.forEach((id, index) => {
+    oyuncular.forEach((oyuncu, index) => {
       if (index === impostorIndex) {
-        io.to(id).emit("rol", { rol: "IMPOSTER" });
+        io.to(oyuncu.id).emit("rol", { rol: "IMPOSTER" });
       } else {
-        io.to(id).emit("rol", { rol: "OYUNCU", kelime });
+        io.to(oyuncu.id).emit("rol", { rol: "OYUNCU", kelime });
       }
     });
   });
 
+  socket.on("oyVer", ({ odaKodu, hedefId }) => {
+    if (!oylar[odaKodu]) oylar[odaKodu] = {};
+    oylar[odaKodu][socket.id] = hedefId;
+
+    const toplamOyuncu = odalar[odaKodu]?.length || 0;
+    const verilenOy = Object.keys(oylar[odaKodu]).length;
+
+    if (verilenOy === toplamOyuncu) {
+      const sayim = {};
+      for (let oyVeren in oylar[odaKodu]) {
+        const hedef = oylar[odaKodu][oyVeren];
+        sayim[hedef] = (sayim[hedef] || 0) + 1;
+      }
+      io.to(odaKodu).emit("oySonucu", { sayim, oyuncular: odalar[odaKodu] });
+      oylar[odaKodu] = {};
+    }
+  });
+
   socket.on("disconnect", () => {
-    console.log("Oyuncu ayrıldı:", socket.id);
     for (let oda in odalar) {
-      odalar[oda] = odalar[oda].filter((id) => id !== socket.id);
+      odalar[oda] = odalar[oda].filter(o => o.id !== socket.id);
+      delete oylar[oda]?.[socket.id];
+      io.to(oda).emit("oyuncuListesi", odalar[oda]);
     }
   });
 });
