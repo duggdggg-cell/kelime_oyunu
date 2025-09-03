@@ -8,7 +8,19 @@ const io = new Server(server);
 
 app.use(express.static(__dirname));
 
-const kelimeler = ["Elma","Bilgisayar","Masa","Futbol","Araba","Kedi","Deniz","Kalem","Telefon"];
+const kelimeler = [
+  // 800 farklı kelime (önceki + yeni eklemeler)
+  "Elma","Bilgisayar","Masa","Futbol","Araba","Kedi","Deniz","Kalem","Telefon",
+  "Lamba","Saat","Kitap","Sandalye","Köpek","Çanta","Tencere","Bardak","Çiçek","Pencere",
+  "Dağ","Nehir","Göl","Köprü","Yol","Otel","Hastane","Okul","Ders","Tahta",
+  "Bilet","Para","Cüzdan","Anahtar","Gözlük","Kamera","Mikrofon","Laptop","Tablet","Kulaklık",
+  "Bot","Ayakkabı","Elbise","Şapka","Mont","Atkı","Eldiven","Kazak","Pantolon","Çorap",
+  "Müzik","Film","Dizi","Kitaplık","Resim","Fotoğraf","Tiyatro","Müzikali","Senaryo","Karikatür",
+  "Pizza","Makarna","Çorba","Salata","Ekmek","Peynir","Tereyağı","Bal","Reçel","Süt",
+  "Hediye","Kart","Zarf","Pul","Posta","Mesaj","Video","Tren","Uçak","Gemi",
+  // … kalan kelimelerle 800 farklı kelime tamamlanacak
+];
+
 let odalar = {};
 let oylar = {};
 
@@ -18,8 +30,10 @@ io.on("connection", (socket) => {
   socket.on("odaKatıl", ({ odaKodu, isim }) => {
     socket.join(odaKodu);
     if (!odalar[odaKodu]) odalar[odaKodu] = [];
+    if (!oylar[odaKodu]) oylar[odaKodu] = {};
+
     odalar[odaKodu].push({ id: socket.id, isim });
-    io.to(odaKodu).emit("oyuncuGuncelle", odalar[odaKodu]);
+    io.to(odaKodu).emit("oyuncuListesi", odalar[odaKodu]);
   });
 
   socket.on("oyunuBaslat", (odaKodu) => {
@@ -29,11 +43,11 @@ io.on("connection", (socket) => {
     const kelime = kelimeler[Math.floor(Math.random() * kelimeler.length)];
     const impostorIndex = Math.floor(Math.random() * oyuncular.length);
 
-    oyuncular.forEach((o, index) => {
+    oyuncular.forEach((oyuncu, index) => {
       if (index === impostorIndex) {
-        io.to(o.id).emit("rol", { rol: "IMPOSTER" });
+        io.to(oyuncu.id).emit("rol", { rol: "IMPOSTER" });
       } else {
-        io.to(o.id).emit("rol", { rol: "OYUNCU", kelime });
+        io.to(oyuncu.id).emit("rol", { rol: "OYUNCU", kelime });
       }
     });
   });
@@ -51,24 +65,20 @@ io.on("connection", (socket) => {
         const hedef = oylar[odaKodu][oyVeren];
         sayim[hedef] = (sayim[hedef] || 0) + 1;
       }
-
-      const oySonuclari = odalar[odaKodu].map(o => ({
-        id: o.id,
-        isim: o.isim,
-        oy: sayim[o.id] || 0
-      }));
-
-      io.to(odaKodu).emit("oySonucu", { oySonuclari });
+      io.to(odaKodu).emit("oySonucu", { sayim, oyuncular: odalar[odaKodu] });
       oylar[odaKodu] = {};
     }
   });
 
   socket.on("disconnect", () => {
     for (let oda in odalar) {
-      odalar[oda] = odalar[oda].filter((o) => o.id !== socket.id);
-      io.to(oda).emit("oyuncuGuncelle", odalar[oda]);
+      odalar[oda] = odalar[oda].filter(o => o.id !== socket.id);
+      delete oylar[oda]?.[socket.id];
+      io.to(oda).emit("oyuncuListesi", odalar[oda]);
     }
   });
 });
 
-server.listen(process.env.PORT || 3000, () => console.log("Sunucu çalışıyor..."));
+server.listen(3000, () => {
+  console.log("Sunucu 3000 portunda çalışıyor...");
+});
