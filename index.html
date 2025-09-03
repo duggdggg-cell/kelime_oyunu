@@ -22,7 +22,7 @@ button:hover { background:#6a11cb; transform:scale(1.05); }
   left: 50%; 
   transform: translateX(-50%);
   display:none; 
-  padding:12px 48px;
+  padding:12px 48px; 
   font-weight:bold; 
   background: linear-gradient(135deg, #6a11cb, #2575fc);
   color:white; 
@@ -35,59 +35,19 @@ button:hover { background:#6a11cb; transform:scale(1.05); }
   max-width:320px;
 }
 #baslatBtn:hover { transform: translateX(-50%) scale(1.05); box-shadow:0 6px 16px rgba(0,0,0,0.4);}
-
-/* CHAT */
-#chatContainer {
-  display:none;
-  position: fixed;
-  right: 20px;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 260px;
-  height: 400px;
-  background: #fff;
-  color: #333;
-  border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-  display:flex;
-  flex-direction: column;
-  overflow:hidden;
-}
-#chatMesajlar {
-  flex:1;
-  padding:10px;
-  overflow-y:auto;
-}
-.mesaj {
-  margin:6px 0;
-  padding:8px 12px;
-  border-radius:12px;
-  max-width: 80%;
-  clear: both;
-}
-.mesaj.benim { background:#2575fc; color:#fff; float:right; text-align:right; }
-.mesaj.diger { background:#eee; color:#333; float:left; text-align:left; }
-#chatInput {
-  display:flex;
-  border-top:1px solid #ccc;
-}
-#chatInput input {
-  flex:1;
-  border:none;
-  padding:10px;
-  font-size:14px;
-  border-radius:0;
-}
-#chatInput button {
-  border:none;
-  background:#2575fc;
-  color:white;
-  padding:10px 16px;
-  cursor:pointer;
-}
+#chat { display:none; position:absolute; top:50%; right:-300px; transform:translateY(-50%); width:280px; background:rgba(255,255,255,0.9); color:#333; padding:10px; border-radius:12px; box-shadow:0 4px 12px rgba(0,0,0,0.3); }
+#messages { height:300px; overflow-y:auto; list-style:none; padding:0; margin:0 0 10px 0; }
+#messages li { margin-bottom:8px; padding:6px 10px; border-radius:12px; max-width:80%; word-wrap:break-word; }
+#messages li.kendi { background:#2575fc; color:white; margin-left:auto; text-align:right; }
+#messages li.diger { background:#ddd; color:#333; margin-right:auto; text-align:left; }
+#chatInput { width:calc(100% - 40px); padding:8px; border-radius:8px; border:1px solid #ccc; font-size:14px; }
+#sendBtn { width:30px; height:30px; border:none; border-radius:50%; background:#2575fc; color:white; font-size:16px; cursor:pointer; margin-left:5px; vertical-align:middle; }
+#sendBtn:hover { background:#6a11cb; }
+#chatControls { display:flex; align-items:center; }
 </style>
 </head>
 <body>
+
 <div id="girisEkrani" class="ekran aktif">
   <h2>Kelime Oyunu</h2>
   <input id="isim" placeholder="İsminizi girin">
@@ -104,11 +64,11 @@ button:hover { background:#6a11cb; transform:scale(1.05); }
   <ul id="oySonucu"></ul>
 </div>
 
-<div id="chatContainer">
-  <div id="chatMesajlar"></div>
-  <div id="chatInput">
-    <input id="chatText" placeholder="Mesaj yaz...">
-    <button onclick="mesajGonder()">Gönder</button>
+<div id="chat">
+  <ul id="messages"></ul>
+  <div id="chatControls">
+    <input id="chatInput" placeholder="Mesaj yaz...">
+    <button id="sendBtn">&gt;</button>
   </div>
 </div>
 
@@ -126,7 +86,7 @@ function odaKatıl(){
   document.getElementById("girisEkrani").classList.remove("aktif");
   document.getElementById("oyunEkrani").classList.add("aktif");
   document.getElementById("baslatBtn").style.display="block";
-  document.getElementById("chatContainer").style.display="flex";
+  document.getElementById("chat").style.display="block";
 }
 
 function oyunuBaslat(){ socket.emit("oyunuBaslat", odaKodu); }
@@ -183,27 +143,23 @@ socket.on("oySonucu", ({oylar})=>{
 });
 
 // CHAT
-function mesajGonder(){
-  const input = document.getElementById("chatText");
-  const mesaj = input.value.trim();
-  if(mesaj){
-    socket.emit("chatMesaj", mesaj);
-    input.value="";
+const chatInput = document.getElementById("chatInput");
+const sendBtn = document.getElementById("sendBtn");
+
+function gonderMesaj(){
+  if(chatInput.value.trim()!==""){
+    socket.emit("chatMessage",{odaKodu, isim, mesaj: chatInput.value.trim()});
+    chatInput.value="";
   }
 }
+sendBtn.addEventListener("click", gonderMesaj);
 
-socket.on("chatMesaj", ({isim: gonderen, mesaj, id})=>{
-  const div = document.createElement("div");
-  div.classList.add("mesaj");
-  if(id === socket.id){
-    div.classList.add("benim");
-    div.innerText = mesaj;
-  } else {
-    div.classList.add("diger");
-    div.innerText = `${gonderen}: ${mesaj}`;
-  }
-  document.getElementById("chatMesajlar").appendChild(div);
-  document.getElementById("chatMesajlar").scrollTop = document.getElementById("chatMesajlar").scrollHeight;
+socket.on("chatMessage", ({isim: gonderen, mesaj})=>{
+  const li=document.createElement("li");
+  li.textContent=mesaj;
+  li.className=gonderen===isim?"kendi":"diger";
+  document.getElementById("messages").appendChild(li);
+  document.getElementById("messages").scrollTop=document.getElementById("messages").scrollHeight;
 });
 </script>
 </body>
