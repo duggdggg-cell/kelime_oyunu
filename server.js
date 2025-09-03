@@ -16,8 +16,8 @@ const kelimeler = [
   "Bot","Ayakkabı","Elbise","Şapka","Mont","Atkı","Eldiven","Kazak","Pantolon","Çorap",
   "Müzik","Film","Dizi","Kitaplık","Resim","Fotoğraf","Tiyatro","Müzikali","Senaryo","Karikatür",
   "Pizza","Makarna","Çorba","Salata","Ekmek","Peynir","Tereyağı","Bal","Reçel","Süt",
-  "Hediye","Kart","Zarf","Pul","Posta","Mesaj","Video","Tren","Uçak","Gemi"
-  // 800 kelime tamamlanacak şekilde eklenebilir
+  "Hediye","Kart","Zarf","Pul","Posta","Mesaj","Video","Tren","Uçak","Gemi",
+  // … 800 kelime tamamlanacak
 ];
 
 let odalar = {};
@@ -33,13 +33,14 @@ io.on("connection", (socket) => {
 
     odalar[odaKodu].push({ id: socket.id, isim, oyVerdi: false });
     io.to(odaKodu).emit("oyuncuListesi", odalar[odaKodu]);
+    io.to(odaKodu).emit("oySonucu", { oylar: {} });
   });
 
   socket.on("oyunuBaslat", (odaKodu) => {
     const oyuncular = odalar[odaKodu];
     if (!oyuncular) return;
 
-    // Tüm oyuncuların oy bilgisini sıfırla
+    // Her oy sıfırlanır
     oyuncular.forEach(o => o.oyVerdi = false);
     oylar[odaKodu] = {};
 
@@ -54,18 +55,29 @@ io.on("connection", (socket) => {
       }
     });
 
-    io.to(odaKodu).emit("oyuncuListesi", oyuncular);
+    io.to(odaKodu).emit("oyuncuListesi", odalar[odaKodu]);
+    io.to(odaKodu).emit("oySonucu", { oylar: oylar[odaKodu] });
   });
 
   socket.on("oyVer", ({ odaKodu, hedefId }) => {
-    const oyuncular = odalar[odaKodu];
-    const oyuKullanan = oyuncular.find(o => o.id === socket.id);
-    if (!oyuKullanan || oyuKullanan.oyVerdi) return; // 1 oy limiti
+    if (!oylar[odaKodu]) oylar[odaKodu] = {};
+    if (odalar[odaKodu].find(o => o.id === socket.id).oyVerdi) return; // bir kez oy kullanabilir
 
     oylar[odaKodu][hedefId] = (oylar[odaKodu][hedefId] || 0) + 1;
-    oyuKullanan.oyVerdi = true;
+    odalar[odaKodu].find(o => o.id === socket.id).oyVerdi = true;
 
-    io.to(odaKodu).emit("oyuncuListesi", oyuncular);
+    io.to(odaKodu).emit("oySonucu", { oylar: oylar[odaKodu] });
+  });
+
+  socket.on("oyIptal", ({ odaKodu, hedefId }) => {
+    if (!oylar[odaKodu]) return;
+    const oyuncu = odalar[odaKodu].find(o => o.id === socket.id);
+    if (!oylar[odaKodu][hedefId] || !oyuncu.oyVerdi) return;
+
+    oylar[odaKodu][hedefId] = Math.max((oylar[odaKodu][hedefId] || 1) - 1, 0);
+    oyuncu.oyVerdi = false;
+
+    io.to(odaKodu).emit("oyuncuListesi", odalar[odaKodu]);
     io.to(odaKodu).emit("oySonucu", { oylar: oylar[odaKodu] });
   });
 
