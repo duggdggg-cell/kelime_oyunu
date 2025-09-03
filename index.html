@@ -5,152 +5,206 @@
 <title>Kelime Oyunu</title>
 <script src="/socket.io/socket.io.js"></script>
 <style>
-  body { font-family: sans-serif; background: linear-gradient(to right, #6a11cb, #2575fc); margin:0; display:flex; justify-content:center; align-items:center; height:100vh; color:#fff;}
-  .ekran { display:none; text-align:center; background:rgba(255,255,255,0.95); color:#333; padding:30px; border-radius:15px; box-shadow:0 4px 20px rgba(0,0,0,0.3); width:450px; max-width:90%; position:relative;}
-  .aktif { display:block; }
-  input, button { padding:12px; margin:10px 0; width:80%; border-radius:8px; border:1px solid #ccc; font-size:16px; }
-  button { background:#2575fc; color:white; cursor:pointer; font-weight:bold; }
-  button:hover { background:#6a11cb; transform:scale(1.05); }
-  #rol { font-size:24px; font-weight:bold; margin-top:20px; }
-  #kelime { font-size:28px; color:green; margin-top:15px; font-weight:bold; }
-  #oyuncular, #oySonucu { margin-top:20px; padding:0; list-style:none; display:flex; flex-wrap:wrap; justify-content:center; }
-  #oyuncular li, #oySonucu li { background:#2575fc; color:white; padding:8px 12px; margin:5px; border-radius:12px; font-weight:500; transition: transform 0.3s; }
-  #oyuncular li:hover, #oySonucu li:hover { transform:scale(1.05); }
-  #baslatBtn { 
-    position: fixed; 
-    bottom: 140px;        /* beyaz alanın hemen altında */
-    left: 50%; 
-    transform: translateX(-50%);
-    display:none; 
-    padding:12px 48px; 
-    font-weight:bold; 
-    background: linear-gradient(135deg, #6a11cb, #2575fc);
-    color:white; 
-    border-radius:12px; 
-    border:none; 
-    cursor:pointer; 
-    box-shadow:0 4px 12px rgba(0,0,0,0.3); 
-    transition: all 0.3s ease; 
-    font-size:16px; 
-    max-width:320px;
-  }
-  #baslatBtn:hover { transform: translateX(-50%) scale(1.05); box-shadow:0 6px 16px rgba(0,0,0,0.4);}
-  .oySatir { display:flex; align-items:center; gap:8px; }
-  .oySatir label { cursor:pointer; }
+body { font-family: sans-serif; background: linear-gradient(to right, #6a11cb, #2575fc); margin:0; display:flex; justify-content:center; align-items:center; height:100vh; color:#fff;}
+.ekran { display:none; text-align:center; background:rgba(255,255,255,0.95); color:#333; padding:30px; border-radius:15px; box-shadow:0 4px 20px rgba(0,0,0,0.3); width:450px; max-width:90%; position:relative;}
+.aktif { display:block; }
+input, button { padding:12px; margin:10px 0; width:80%; border-radius:8px; border:1px solid #ccc; font-size:16px; }
+button { background:#2575fc; color:white; cursor:pointer; font-weight:bold; }
+button:hover { background:#6a11cb; transform:scale(1.05); }
+#rol { font-size:24px; font-weight:bold; margin-top:20px; }
+#kelime { font-size:28px; color:green; margin-top:15px; font-weight:bold; }
+#oyuncular, #oySonucu { margin-top:20px; padding:0; list-style:none; display:flex; flex-wrap:wrap; justify-content:center; }
+#oyuncular li, #oySonucu li { background:#2575fc; color:white; padding:8px 12px; margin:5px; border-radius:12px; font-weight:500; transition: transform 0.3s; }
+#oyuncular li:hover, #oySonucu li:hover { transform:scale(1.1); }
+#baslatBtn { 
+  position: fixed; 
+  bottom: 140px; 
+  left: 50%; 
+  transform: translateX(-50%);
+  display:none; 
+  padding:12px 48px;
+  font-weight:bold; 
+  background: linear-gradient(135deg, #6a11cb, #2575fc);
+  color:white; 
+  border-radius:12px; 
+  border:none; 
+  cursor:pointer; 
+  box-shadow:0 4px 12px rgba(0,0,0,0.3); 
+  transition: all 0.3s ease; 
+  font-size:16px; 
+  max-width:320px;
+}
+#baslatBtn:hover { transform: translateX(-50%) scale(1.05); box-shadow:0 6px 16px rgba(0,0,0,0.4);}
+
+/* CHAT */
+#chatContainer {
+  display:none;
+  position: fixed;
+  right: 20px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 260px;
+  height: 400px;
+  background: #fff;
+  color: #333;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+  display:flex;
+  flex-direction: column;
+  overflow:hidden;
+}
+#chatMesajlar {
+  flex:1;
+  padding:10px;
+  overflow-y:auto;
+}
+.mesaj {
+  margin:6px 0;
+  padding:8px 12px;
+  border-radius:12px;
+  max-width: 80%;
+  clear: both;
+}
+.mesaj.benim { background:#2575fc; color:#fff; float:right; text-align:right; }
+.mesaj.diger { background:#eee; color:#333; float:left; text-align:left; }
+#chatInput {
+  display:flex;
+  border-top:1px solid #ccc;
+}
+#chatInput input {
+  flex:1;
+  border:none;
+  padding:10px;
+  font-size:14px;
+  border-radius:0;
+}
+#chatInput button {
+  border:none;
+  background:#2575fc;
+  color:white;
+  padding:10px 16px;
+  cursor:pointer;
+}
 </style>
 </head>
 <body>
-  <div id="girisEkrani" class="ekran aktif">
-    <h2>Kelime Oyunu</h2>
-    <input id="isim" placeholder="İsminizi girin">
-    <input id="odaKodu" placeholder="Oda kodu girin">
-    <button onclick="odaKatıl()">Odaya Katıl</button>
-  </div>
+<div id="girisEkrani" class="ekran aktif">
+  <h2>Kelime Oyunu</h2>
+  <input id="isim" placeholder="İsminizi girin">
+  <input id="odaKodu" placeholder="Oda kodu girin">
+  <button onclick="odaKatıl()">Odaya Katıl</button>
+</div>
 
-  <div id="oyunEkrani" class="ekran">
-    <h2>Rolünüz: <span id="rol"></span></h2>
-    <div id="kelime"></div>
-    <h3>Oyuncular</h3>
-    <ul id="oyuncular"></ul>
-    <h3>Oylama</h3>
-    <ul id="oySonucu"></ul>
-  </div>
+<div id="oyunEkrani" class="ekran">
+  <h2>Rolünüz: <span id="rol"></span></h2>
+  <div id="kelime"></div>
+  <h3>Oyuncular</h3>
+  <ul id="oyuncular"></ul>
+  <h3>Oylama</h3>
+  <ul id="oySonucu"></ul>
+</div>
 
-  <button id="baslatBtn" onclick="oyunuBaslat()">Oyunu Başlat</button>
+<div id="chatContainer">
+  <div id="chatMesajlar"></div>
+  <div id="chatInput">
+    <input id="chatText" placeholder="Mesaj yaz...">
+    <button onclick="mesajGonder()">Gönder</button>
+  </div>
+</div>
+
+<button id="baslatBtn" onclick="oyunuBaslat()">Oyunu Başlat</button>
 
 <script>
-  const socket = io();
-  let odaKodu = "", isim = "";
-  let benimOy = null;                 // Bu istemcinin seçtiği hedefId
-  let sonOyuncular = [];              // Son alınan oyuncu listesi
-  let sonSayim = {};                  // id -> oy sayısı
+const socket = io();
+let odaKodu="", isim="";
 
-  socket.on("connect", () => {
-    // gerekirse kendi id'nize erişmek için: socket.id
+function odaKatıl(){
+  isim = document.getElementById("isim").value.trim();
+  odaKodu = document.getElementById("odaKodu").value.trim();
+  if(!isim || !odaKodu){ alert("Lütfen isim ve oda kodu girin!"); return; }
+  socket.emit("odaKatıl",{odaKodu, isim});
+  document.getElementById("girisEkrani").classList.remove("aktif");
+  document.getElementById("oyunEkrani").classList.add("aktif");
+  document.getElementById("baslatBtn").style.display="block";
+  document.getElementById("chatContainer").style.display="flex";
+}
+
+function oyunuBaslat(){ socket.emit("oyunuBaslat", odaKodu); }
+
+socket.on("rol", data => {
+  document.getElementById("rol").innerText=data.rol;
+  document.getElementById("rol").style.color=data.rol==="IMPOSTER"?"red":"blue";
+  document.getElementById("kelime").innerText=data.kelime?`Kelimeniz: ${data.kelime}`:"";
+});
+
+socket.on("oyuncuListesi", oyuncular => {
+  const ul = document.getElementById("oyuncular");
+  ul.innerHTML="";
+  oyuncular.forEach(o=>{
+    const li=document.createElement("li");
+    li.textContent=o.isim;
+    ul.appendChild(li);
   });
 
-  function odaKatıl(){
-    isim = document.getElementById("isim").value.trim();
-    odaKodu = document.getElementById("odaKodu").value.trim();
-    if(!isim || !odaKodu){ alert("Lütfen isim ve oda kodu girin!"); return; }
-    socket.emit("odaKatıl",{odaKodu, isim});
-    document.getElementById("girisEkrani").classList.remove("aktif");
-    document.getElementById("oyunEkrani").classList.add("aktif");
-    document.getElementById("baslatBtn").style.display="block";
-  }
-
-  function oyunuBaslat(){
-    // Yeni turda benim oyum da sıfırlanır
-    benimOy = null;
-    socket.emit("oyunuBaslat", odaKodu);
-  }
-
-  socket.on("rol", data => {
-    document.getElementById("rol").innerText = data.rol;
-    document.getElementById("rol").style.color = data.rol === "IMPOSTER" ? "red" : "blue";
-    document.getElementById("kelime").innerText = data.kelime ? `Kelimeniz: ${data.kelime}` : "";
+  const oyUl = document.getElementById("oySonucu");
+  oyUl.innerHTML="";
+  oyuncular.forEach(o=>{
+    const li = document.createElement("li");
+    li.innerHTML = `<input type="checkbox" class="oyCheckbox" data-id="${o.id}"> ${o.isim} - 0 oy`;
+    oyUl.appendChild(li);
   });
 
-  socket.on("oyuncuListesi", oyuncular => {
-    sonOyuncular = oyuncular.slice();
-    renderOyuncular();
-    renderOylama(); // listeler birlikte güncellensin
-  });
-
-  socket.on("oySonucu", ({ sayim, oylar }) => {
-    // Geriye dönük uyumluluk: sunucu 'oylar' gönderdiyse onu kullan
-    sonSayim = sayim || oylar || {};
-    renderOylama();
-  });
-
-  function renderOyuncular(){
-    const ul = document.getElementById("oyuncular");
-    ul.innerHTML = "";
-    sonOyuncular.forEach(o => {
-      const li = document.createElement("li");
-      li.textContent = o.isim;
-      ul.appendChild(li);
+  document.querySelectorAll(".oyCheckbox").forEach(cb=>{
+    cb.addEventListener("click", e=>{
+      const secili = e.target;
+      if(secili.checked){
+        document.querySelectorAll(".oyCheckbox").forEach(c=>{if(c!==secili) c.checked=false;});
+        socket.emit("oyVer",{odaKodu, hedefId: secili.dataset.id});
+      }
     });
-  }
+  });
+});
 
-  function renderOylama(){
-    const oyUl = document.getElementById("oySonucu");
-    oyUl.innerHTML = "";
+socket.on("oySonucu", ({oylar})=>{
+  document.querySelectorAll("#oySonucu li").forEach(li=>{
+    const id = li.querySelector("input").dataset.id;
+    li.innerHTML = `<input type="checkbox" class="oyCheckbox" data-id="${id}"> ${li.textContent.split('-')[0].trim()} - ${oylar[id]||0} oy`;
+  });
 
-    sonOyuncular.forEach(o => {
-      const li = document.createElement("li");
-      const checked = benimOy === o.id ? "checked" : "";
-      const sayi = sonSayim[o.id] || 0;
-
-      li.innerHTML = `
-        <div class="oySatir">
-          <input type="checkbox" class="oyCheckbox" data-id="${o.id}" ${checked}>
-          <label>${o.isim} - <strong>${sayi}</strong> oy</label>
-        </div>
-      `;
-      oyUl.appendChild(li);
+  document.querySelectorAll(".oyCheckbox").forEach(cb=>{
+    cb.addEventListener("click", e=>{
+      const secili = e.target;
+      if(secili.checked){
+        document.querySelectorAll(".oyCheckbox").forEach(c=>{if(c!==secili) c.checked=false;});
+        socket.emit("oyVer",{odaKodu, hedefId: secili.dataset.id});
+      }
     });
+  });
+});
 
-    // Checkbox eventlerini bağla
-    document.querySelectorAll(".oyCheckbox").forEach(cb => {
-      cb.addEventListener("change", (e) => {
-        const id = e.target.dataset.id;
-
-        if (e.target.checked) {
-          // diğerlerini kapat (tek aktif oy)
-          document.querySelectorAll(".oyCheckbox").forEach(c => {
-            if (c !== e.target) c.checked = false;
-          });
-          benimOy = id;
-          socket.emit("oyVer", { odaKodu, hedefId: id });
-        } else {
-          // oy geri alındı
-          benimOy = null;
-          socket.emit("oyVer", { odaKodu, hedefId: null });
-        }
-      });
-    });
+// CHAT
+function mesajGonder(){
+  const input = document.getElementById("chatText");
+  const mesaj = input.value.trim();
+  if(mesaj){
+    socket.emit("chatMesaj", mesaj);
+    input.value="";
   }
+}
+
+socket.on("chatMesaj", ({isim: gonderen, mesaj, id})=>{
+  const div = document.createElement("div");
+  div.classList.add("mesaj");
+  if(id === socket.id){
+    div.classList.add("benim");
+    div.innerText = mesaj;
+  } else {
+    div.classList.add("diger");
+    div.innerText = `${gonderen}: ${mesaj}`;
+  }
+  document.getElementById("chatMesajlar").appendChild(div);
+  document.getElementById("chatMesajlar").scrollTop = document.getElementById("chatMesajlar").scrollHeight;
+});
 </script>
 </body>
 </html>
