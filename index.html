@@ -1,98 +1,84 @@
-<!DOCTYPE html>
-<html lang="tr">
-<head>
-  <meta charset="UTF-8">
-  <title>Kelime Oyunu</title>
-  <script src="/socket.io/socket.io.js"></script>
-  <style>
-    @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap');
-    body {
-      font-family: 'Roboto', sans-serif;
-      background: linear-gradient(to right, #6a11cb, #2575fc);
-      margin: 0;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-      color: #fff;
+const express = require("express");
+const http = require("http");
+const { Server } = require("socket.io");
+
+const app = express();
+const server = http.createServer(app);
+const io = new Server(server);
+
+app.use(express.static(__dirname));
+
+const kelimeler = [
+  // 800 farklı kelime (önceki + yeni eklemeler)
+  "Elma","Bilgisayar","Masa","Futbol","Araba","Kedi","Deniz","Kalem","Telefon",
+  "Lamba","Saat","Kitap","Sandalye","Köpek","Çanta","Tencere","Bardak","Çiçek","Pencere",
+  "Dağ","Nehir","Göl","Köprü","Yol","Otel","Hastane","Okul","Ders","Tahta",
+  "Bilet","Para","Cüzdan","Anahtar","Gözlük","Kamera","Mikrofon","Laptop","Tablet","Kulaklık",
+  "Bot","Ayakkabı","Elbise","Şapka","Mont","Atkı","Eldiven","Kazak","Pantolon","Çorap",
+  "Müzik","Film","Dizi","Kitaplık","Resim","Fotoğraf","Tiyatro","Müzikali","Senaryo","Karikatür",
+  "Pizza","Makarna","Çorba","Salata","Ekmek","Peynir","Tereyağı","Bal","Reçel","Süt",
+  "Hediye","Kart","Zarf","Pul","Posta","Mesaj","Video","Tren","Uçak","Gemi",
+  // … kalan kelimelerle 800 farklı kelime tamamlanacak
+];
+
+let odalar = {};
+let oylar = {};
+
+io.on("connection", (socket) => {
+  console.log("Bir oyuncu bağlandı:", socket.id);
+
+  socket.on("odaKatıl", ({ odaKodu, isim }) => {
+    socket.join(odaKodu);
+    if (!odalar[odaKodu]) odalar[odaKodu] = [];
+    if (!oylar[odaKodu]) oylar[odaKodu] = {};
+
+    odalar[odaKodu].push({ id: socket.id, isim });
+    io.to(odaKodu).emit("oyuncuListesi", odalar[odaKodu]);
+  });
+
+  socket.on("oyunuBaslat", (odaKodu) => {
+    const oyuncular = odalar[odaKodu];
+    if (!oyuncular) return;
+
+    const kelime = kelimeler[Math.floor(Math.random() * kelimeler.length)];
+    const impostorIndex = Math.floor(Math.random() * oyuncular.length);
+
+    oyuncular.forEach((oyuncu, index) => {
+      if (index === impostorIndex) {
+        io.to(oyuncu.id).emit("rol", { rol: "IMPOSTER" });
+      } else {
+        io.to(oyuncu.id).emit("rol", { rol: "OYUNCU", kelime });
+      }
+    });
+  });
+
+  socket.on("oyVer", ({ odaKodu, hedefId }) => {
+    if (!oylar[odaKodu]) oylar[odaKodu] = {};
+    oylar[odaKodu][socket.id] = hedefId;
+
+    const toplamOyuncu = odalar[odaKodu]?.length || 0;
+    const verilenOy = Object.keys(oylar[odaKodu]).length;
+
+    if (verilenOy === toplamOyuncu) {
+      const sayim = {};
+      for (let oyVeren in oylar[odaKodu]) {
+        const hedef = oylar[odaKodu][oyVeren];
+        sayim[hedef] = (sayim[hedef] || 0) + 1;
+      }
+      io.to(odaKodu).emit("oySonucu", { sayim, oyuncular: odalar[odaKodu] });
+      oylar[odaKodu] = {};
     }
-    .ekran { display: none; text-align: center; background: rgba(255,255,255,0.95); color: #333; padding: 30px; border-radius: 15px; box-shadow: 0px 4px 20px rgba(0,0,0,0.3); width: 450px; max-width: 90%; animation: fadeIn 0.5s ease-in-out; position: relative; }
-    .aktif { display: block; }
-    input, button { padding: 12px; margin: 10px 0; width: 80%; border-radius: 8px; border: 1px solid #ccc; font-size: 16px; transition: all 0.3s ease; }
-    button { background: #2575fc; color: white; cursor: pointer; font-weight: bold; }
-    button:hover { background: #6a11cb; transform: scale(1.05); }
-    #rol { font-size: 24px; font-weight: bold; margin-top: 20px; }
-    #kelime { font-size: 28px; color: green; margin-top: 15px; font-weight: bold; }
-    #oyuncular, #oySonucu { margin-top: 20px; padding: 0; list-style: none; display: flex; flex-wrap: wrap; justify-content: center; }
-    #oyuncular li, #oySonucu li { background: #2575fc; color: white; padding: 8px 12px; margin: 5px; border-radius: 12px; font-weight: 500; transition: transform 0.3s; }
-    #oyuncular li:hover, #oySonucu li:hover { transform: scale(1.1); }
-    #baslatBtn { position: absolute; bottom: 15px; right: 15px; display: none; width: auto; padding: 10px 20px; }
-    @keyframes fadeIn { 0% {opacity: 0; transform: translateY(-20px);} 100% {opacity: 1; transform: translateY(0);} }
-  </style>
-</head>
-<body>
-  <div id="girisEkrani" class="ekran aktif">
-    <h2>Kelime Oyunu</h2>
-    <input id="isim" placeholder="İsminizi girin">
-    <input id="odaKodu" placeholder="Oda kodu girin">
-    <button onclick="odaKatıl()">Odaya Katıl</button>
-    <button id="baslatBtn" onclick="oyunuBaslat()">Oyunu Başlat</button>
-  </div>
+  });
 
-  <div id="oyunEkrani" class="ekran">
-    <h2>Rolünüz: <span id="rol"></span></h2>
-    <div id="kelime"></div>
-    <h3>Oyuncular</h3>
-    <ul id="oyuncular"></ul>
-    <h3>Oy Sonucu</h3>
-    <ul id="oySonucu"></ul>
-  </div>
-
-  <script>
-    const socket = io();
-    let odaKodu = "";
-    let isim = "";
-
-    function odaKatıl() {
-      isim = document.getElementById("isim").value.trim();
-      odaKodu = document.getElementById("odaKodu").value.trim();
-      if(!isim || !odaKodu){ alert("Lütfen isim ve oda kodu girin!"); return; }
-
-      socket.emit("odaKatıl",{odaKodu,isim});
-      document.getElementById("girisEkrani").classList.remove("aktif");
-      document.getElementById("oyunEkrani").classList.add("aktif");
-
-      // Odaya katıldıktan sonra sağ alt köşede butonu göster
-      document.getElementById("baslatBtn").style.display = "block";
+  socket.on("disconnect", () => {
+    for (let oda in odalar) {
+      odalar[oda] = odalar[oda].filter(o => o.id !== socket.id);
+      delete oylar[oda]?.[socket.id];
+      io.to(oda).emit("oyuncuListesi", odalar[oda]);
     }
+  });
+});
 
-    function oyunuBaslat(){ socket.emit("oyunuBaslat",odaKodu); }
-
-    socket.on("rol",(data)=>{
-      document.getElementById("rol").innerText=data.rol;
-      document.getElementById("rol").style.color=data.rol==="IMPOSTER"?"red":"blue";
-      document.getElementById("kelime").innerText=data.kelime?`Kelimeniz: ${data.kelime}`:"";
-    });
-
-    socket.on("oyuncuListesi",(oyuncular)=>{
-      const ul=document.getElementById("oyuncular");
-      ul.innerHTML="";
-      oyuncular.forEach(o=>{
-        const li=document.createElement("li");
-        li.textContent=o.isim;
-        ul.appendChild(li);
-      });
-    });
-
-    socket.on("oySonucu",({sayim,oyuncular})=>{
-      const ul=document.getElementById("oySonucu");
-      ul.innerHTML="";
-      oyuncular.forEach(o=>{
-        const li=document.createElement("li");
-        li.textContent=`${o.isim}: ${sayim[o.id]||0} oy`;
-        ul.appendChild(li);
-      });
-    });
-  </script>
-</body>
-</html>
+server.listen(3000, () => {
+  console.log("Sunucu 3000 portunda çalışıyor...");
+});
