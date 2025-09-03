@@ -38,7 +38,7 @@ io.on("connection", (socket) => {
     const oyuncular = odalar[odaKodu];
     if (!oyuncular) return;
 
-    oyuncular.forEach(o => o.oyVerdi = false); // oyları sıfırla
+    oyuncular.forEach(o => o.oyVerdi = false);
     oylar[odaKodu] = {};
 
     const kelime = kelimeler[Math.floor(Math.random() * kelimeler.length)];
@@ -55,22 +55,34 @@ io.on("connection", (socket) => {
     io.to(odaKodu).emit("oyuncuListesi", oyuncular);
   });
 
-  socket.on("oyVer", ({ odaKodu, hedefId, oyVerenId }) => {
+  socket.on("oyVer", ({ odaKodu, hedefId }) => {
     const oyuncular = odalar[odaKodu];
-    const oyuKullanan = oyuncular.find(o => o.id === oyVerenId);
+    const oyuKullanan = oyuncular.find(o => o.id === socket.id);
     if (!oyuKullanan) return;
 
-    if (!oylar[odaKodu][hedefId]) oylar[odaKodu][hedefId] = 0;
-    oylar[odaKodu][hedefId] += 1;
-    oyuKullanan.oyVerdi = true;
+    // Oy geri alma
+    if(oyuKullanan.oyVerdi && !hedefId){
+      oyuKullanan.oyVerdi = false;
+      for(let id in oylar[odaKodu]){
+        if(oylar[odaKodu][id]>0){
+          oylar[odaKodu][id]--;
+        }
+      }
+    }
+
+    // Yeni oy
+    if(!oyuKullanan.oyVerdi && hedefId){
+      oylar[odaKodu][hedefId] = (oylar[odaKodu][hedefId] || 0) + 1;
+      oyuKullanan.oyVerdi = true;
+    }
 
     io.to(odaKodu).emit("oyuncuListesi", oyuncular);
     io.to(odaKodu).emit("oySonucu", { oylar: oylar[odaKodu] });
   });
 
-  // Chat mesajları
+  // Chat mesajı
   socket.on("chatMesaj", ({ odaKodu, isim, mesaj }) => {
-    io.to(odaKodu).emit("chatMesaj", { isim, mesaj });
+    io.to(odaKodu).emit("chatGuncelle", { isim, mesaj });
   });
 
   socket.on("disconnect", () => {
@@ -83,4 +95,6 @@ io.on("connection", (socket) => {
   });
 });
 
-server.listen(3000, () => console.log("Sunucu 3000 portunda çalışıyor..."));
+server.listen(3000, () => {
+  console.log("Sunucu 3000 portunda çalışıyor...");
+});
