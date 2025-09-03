@@ -16,15 +16,13 @@ button:hover { background:#6a11cb; transform:scale(1.05); }
 #oyuncular, #oySonucu { margin-top:20px; padding:0; list-style:none; display:flex; flex-wrap:wrap; justify-content:center; }
 #oyuncular li, #oySonucu li { background:#2575fc; color:white; padding:8px 12px; margin:5px; border-radius:12px; font-weight:500; transition: transform 0.3s; }
 #oyuncular li:hover, #oySonucu li:hover { transform:scale(1.1); }
-
-/* Baslat butonu */
 #baslatBtn { 
   position: fixed; 
-  bottom: 140px; 
+  bottom: 140px; /* beyaz alanın hemen altında */
   left: 50%; 
   transform: translateX(-50%);
   display:none; 
-  padding:12px 48px; 
+  padding:12px 48px; /* genişlik artırıldı */ 
   font-weight:bold; 
   background: linear-gradient(135deg, #6a11cb, #2575fc);
   color:white; 
@@ -38,22 +36,34 @@ button:hover { background:#6a11cb; transform:scale(1.05); }
 }
 #baslatBtn:hover { transform: translateX(-50%) scale(1.05); box-shadow:0 6px 16px rgba(0,0,0,0.4);}
 
-/* Oyun ekranı layout */
-#oyunEkrani { display:flex; justify-content:flex-start; align-items:flex-start; position:relative; }
-#oyuncular, #oySonucu { flex:1; margin-right:20px; }
-
-/* Chat */
-#chatEkrani { width:200px; height:350px; background:rgba(255,255,255,0.95); padding:10px; border-radius:12px; color:black; box-shadow:0 4px 12px rgba(0,0,0,0.2); display:flex; flex-direction:column; position:fixed; right:30px; top:50%; transform:translateY(-50%); }
-#chatMesajlar { height:100%; overflow-y:auto; flex-grow:1; display:flex; flex-direction:column; }
-.chatMesaj { max-width:90%; padding:6px 10px; border-radius:12px; margin:3px 0; box-shadow:0 2px 6px rgba(0,0,0,0.2); font-size:14px; }
+/* Chat panel */
+#chatPanel { 
+  position: absolute; 
+  top: 50%; 
+  right: -260px; /* beyaz alanın sağında */
+  transform: translateY(-50%);
+  width: 220px; 
+  height: 350px; 
+  background: rgba(255,255,255,0.95); 
+  color: #333; 
+  border-radius:12px; 
+  padding:10px; 
+  display:flex; 
+  flex-direction: column; 
+  box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+}
+#chatMesajlar { flex:1; overflow-y:auto; margin-bottom:5px; display:flex; flex-direction: column; }
+.chatMesaj { max-width:90%; padding:6px 10px; border-radius:12px; margin:3px 0; box-shadow:0 2px 6px rgba(0,0,0,0.2); font-size:14px; word-break: break-word; }
 .chatKendi { align-self:flex-end; background: #2575fc; color:white; border-bottom-right-radius:0; }
 .chatBaska { align-self:flex-start; background: #e0e0e0; color:black; border-bottom-left-radius:0; }
-#chatInput { margin-top:5px; width:100%; box-sizing:border-box; }
-#chatEkrani button { margin-top:5px; width:100%; }
+#chatInput { display:flex; }
+#chatInput input { flex:1; padding:6px 8px; font-size:14px; border-radius:6px; border:1px solid #ccc; }
+#chatInput button { margin-left:4px; padding:6px 12px; border:none; border-radius:6px; background:#2575fc; color:white; cursor:pointer; }
+#chatInput button:hover { background:#6a11cb; }
+
 </style>
 </head>
 <body>
-
 <div id="girisEkrani" class="ekran aktif">
   <h2>Kelime Oyunu</h2>
   <input id="isim" placeholder="İsminizi girin">
@@ -62,21 +72,20 @@ button:hover { background:#6a11cb; transform:scale(1.05); }
 </div>
 
 <div id="oyunEkrani" class="ekran">
-  <div style="flex:1;">
-    <h2>Rolünüz: <span id="rol"></span></h2>
-    <div id="kelime"></div>
-    <h3>Oyuncular</h3>
-    <ul id="oyuncular"></ul>
-    <h3>Oylama</h3>
-    <ul id="oySonucu"></ul>
-  </div>
+  <h2>Rolünüz: <span id="rol"></span></h2>
+  <div id="kelime"></div>
+  <h3>Oyuncular</h3>
+  <ul id="oyuncular"></ul>
+  <h3>Oylama</h3>
+  <ul id="oySonucu"></ul>
 
-  <!-- Chat sadece oyun ekranında -->
-  <div id="chatEkrani">
-    <h4>Chat</h4>
+  <!-- Chat panel -->
+  <div id="chatPanel">
     <div id="chatMesajlar"></div>
-    <input id="chatInput" placeholder="Mesajınızı yazın...">
-    <button onclick="mesajGonder()">Gönder</button>
+    <div id="chatInput">
+      <input type="text" id="chatGirdi" placeholder="Mesaj yaz...">
+      <button onclick="gonder()">Gönder</button>
+    </div>
   </div>
 </div>
 
@@ -153,26 +162,21 @@ socket.on("oySonucu", ({oylar})=>{
   });
 });
 
-// Chat
-function mesajGonder(){
-  const mesaj = document.getElementById("chatInput").value.trim();
-  if(!mesaj) return;
-  socket.emit("chatMesaj",{odaKodu, isim, mesaj});
-  document.getElementById("chatInput").value="";
+// Chat sistemi
+function gonder(){
+  const mesaj = document.getElementById("chatGirdi").value.trim();
+  if(mesaj){
+    socket.emit("chat",{odaKodu, isim, mesaj});
+    document.getElementById("chatGirdi").value="";
+  }
 }
 
-socket.on("chatGuncelle", ({isim: gonderen, mesaj})=>{
-  const div = document.getElementById("chatMesajlar");
-  const p = document.createElement("div");
-  p.classList.add("chatMesaj");
-  if(gonderen === isim){
-    p.classList.add("chatKendi");
-  } else {
-    p.classList.add("chatBaska");
-  }
-  p.textContent = `${gonderen}: ${mesaj}`;
-  div.appendChild(p);
-  div.scrollTop = div.scrollHeight;
+socket.on("chat", ({isim: gonderen, mesaj})=>{
+  const div = document.createElement("div");
+  div.className = "chatMesaj " + (gonderen===isim?"chatKendi":"chatBaska");
+  div.textContent = `${gonderen}: ${mesaj}`;
+  document.getElementById("chatMesajlar").appendChild(div);
+  document.getElementById("chatMesajlar").scrollTop = document.getElementById("chatMesajlar").scrollHeight;
 });
 </script>
 </body>
