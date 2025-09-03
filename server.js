@@ -60,20 +60,29 @@ io.on("connection", (socket) => {
     const oyuKullanan = oyuncular.find(o => o.id === socket.id);
     if (!oyuKullanan) return;
 
-    if (hedefId) {
-      if (oyuKullanan.oyVerdi) return;
-      oylar[odaKodu][hedefId] = (oylar[odaKodu][hedefId] || 0) + 1;
-      oyuKullanan.oyVerdi = true;
-    } else {
+    // Oy geri alma
+    if(oyuKullanan.oyVerdi && !hedefId){
       oyuKullanan.oyVerdi = false;
+      for(let id in oylar[odaKodu]){
+        if(oylar[odaKodu][id]>0){
+          oylar[odaKodu][id]--;
+        }
+      }
     }
 
+    // Yeni oy
+    if(!oyuKullanan.oyVerdi && hedefId){
+      oylar[odaKodu][hedefId] = (oylar[odaKodu][hedefId] || 0) + 1;
+      oyuKullanan.oyVerdi = true;
+    }
+
+    io.to(odaKodu).emit("oyuncuListesi", oyuncular);
     io.to(odaKodu).emit("oySonucu", { oylar: oylar[odaKodu] });
   });
 
-  // ✅ CHAT MESAJLARI
-  socket.on("mesajGonder", ({ odaKodu, isim, mesaj }) => {
-    io.to(odaKodu).emit("mesajAl", { isim, mesaj });
+  // Chat mesajı
+  socket.on("chatMesaj", ({ odaKodu, isim, mesaj }) => {
+    io.to(odaKodu).emit("chatGuncelle", { isim, mesaj });
   });
 
   socket.on("disconnect", () => {
