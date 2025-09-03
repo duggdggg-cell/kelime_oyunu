@@ -17,6 +17,7 @@ const kelimeler = [
   "Müzik","Film","Dizi","Kitaplık","Resim","Fotoğraf","Tiyatro","Müzikali","Senaryo","Karikatür",
   "Pizza","Makarna","Çorba","Salata","Ekmek","Peynir","Tereyağı","Bal","Reçel","Süt",
   "Hediye","Kart","Zarf","Pul","Posta","Mesaj","Video","Tren","Uçak","Gemi"
+  // 800 kelimeye kadar eklenebilir
 ];
 
 let odalar = {};
@@ -60,29 +61,24 @@ io.on("connection", (socket) => {
     const oyuKullanan = oyuncular.find(o => o.id === socket.id);
     if (!oyuKullanan) return;
 
-    // Oy geri alma
-    if(oyuKullanan.oyVerdi && !hedefId){
-      oyuKullanan.oyVerdi = false;
-      for(let id in oylar[odaKodu]){
-        if(oylar[odaKodu][id]>0){
-          oylar[odaKodu][id]--;
-        }
-      }
-    }
-
-    // Yeni oy
-    if(!oyuKullanan.oyVerdi && hedefId){
+    if (hedefId) {
       oylar[odaKodu][hedefId] = (oylar[odaKodu][hedefId] || 0) + 1;
       oyuKullanan.oyVerdi = true;
+    } else {
+      // Oy geri alındığında
+      for (let id in oylar[odaKodu]) {
+        if (id === socket.id) continue;
+      }
+      oyuKullanan.oyVerdi = false;
     }
 
     io.to(odaKodu).emit("oyuncuListesi", oyuncular);
     io.to(odaKodu).emit("oySonucu", { oylar: oylar[odaKodu] });
   });
 
-  // Chat mesajı
-  socket.on("chatMesaj", ({ odaKodu, isim, mesaj }) => {
-    io.to(odaKodu).emit("chatGuncelle", { isim, mesaj });
+  // ✅ Chat mesajı
+  socket.on("mesajGonder", ({ odaKodu, isim, mesaj }) => {
+    io.to(odaKodu).emit("mesajAl", { isim, mesaj });
   });
 
   socket.on("disconnect", () => {
