@@ -53,7 +53,7 @@ button:hover { background:#6a11cb; transform:scale(1.05); }
   flex-direction:column;
 }
 #chatMessages { flex:1; padding:10px; overflow-y:auto; }
-.message { margin:5px; padding:8px 12px; border-radius:12px; max-width:70%; }
+.message { margin:5px; padding:8px 12px; border-radius:12px; max-width:70%; word-wrap:break-word; }
 .message.own { background:#2575fc; color:white; margin-left:auto; text-align:right; }
 .message.other { background:#e5e5ea; color:black; margin-right:auto; text-align:left; }
 #chatInputContainer { display:flex; padding:5px; border-top:1px solid #ccc; }
@@ -126,12 +126,14 @@ socket.on("oySonucu", ({oylar})=>{
   const ul = document.getElementById("oySonucu");
   ul.innerHTML="";
   const oyuncular = document.querySelectorAll("#oyuncular li");
-  oyuncular.forEach((o, i)=>{
-    const id = Object.keys(oylar)[i];
+  oyuncular.forEach(o=>{
     const isim = o.textContent;
-    const oySayisi = Object.values(oylar).filter(v => v === isim).length;
+    let oySayisi = 0;
+    for (let id in oylar) {
+      if (id === o.dataset?.id) oySayisi = oylar[id];
+    }
     const li=document.createElement("li");
-    li.textContent = `${isim} - ${oylar[o.id]||0} oy`;
+    li.textContent = `${isim} - ${oySayisi||0} oy`;
     ul.appendChild(li);
   });
 });
