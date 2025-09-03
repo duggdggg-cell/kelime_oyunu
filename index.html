@@ -205,45 +205,6 @@ socket.on("chatMesaj", ({isim: gonderen, mesaj, id})=>{
   document.getElementById("chatMesajlar").appendChild(div);
   document.getElementById("chatMesajlar").scrollTop = document.getElementById("chatMesajlar").scrollHeight;
 });
-  <script>
-// Mevcut s2 JS kodları burada kalacak...
-
-function mesajGonder(){
-  const input = document.getElementById("chatText");
-  const mesaj = input.value.trim();
-  if(mesaj){
-    socket.emit("chatMesaj", mesaj);
-    input.value="";
-  }
-}
-
-// Enter ile mesaj gönderme
-document.addEventListener("DOMContentLoaded", () => {
-  const input = document.getElementById("chatText");
-  input.addEventListener("keypress", (e) => {
-    if (e.key === "Enter") {
-      e.preventDefault();
-      mesajGonder();
-    }
-  });
-});
-
-socket.on("chatMesaj", ({isim: gonderen, mesaj, id})=>{
-  const div = document.createElement("div");
-  div.classList.add("mesaj");
-  if(id === socket.id){
-    div.classList.add("benim");
-    div.innerText = mesaj;
-  } else {
-    div.classList.add("diger");
-    div.innerText = `${gonderen}: ${mesaj}`;
-  }
-  document.getElementById("chatMesajlar").appendChild(div);
-  document.getElementById("chatMesajlar").scrollTop = document.getElementById("chatMesajlar").scrollHeight;
-});
 </script>
-
-</script>
-  
 </body>
 </html>
