@@ -17,7 +17,6 @@ const kelimeler = [
   "Müzik","Film","Dizi","Kitaplık","Resim","Fotoğraf","Tiyatro","Müzikali","Senaryo","Karikatür",
   "Pizza","Makarna","Çorba","Salata","Ekmek","Peynir","Tereyağı","Bal","Reçel","Süt",
   "Hediye","Kart","Zarf","Pul","Posta","Mesaj","Video","Tren","Uçak","Gemi"
-  // 800 kelime tamamlanacak şekilde eklenebilir
 ];
 
 let odalar = {};
@@ -31,7 +30,7 @@ io.on("connection", (socket) => {
     if (!odalar[odaKodu]) odalar[odaKodu] = [];
     if (!oylar[odaKodu]) oylar[odaKodu] = {};
 
-    odalar[odaKodu].push({ id: socket.id, isim, oyVerdi: false });
+    odalar[odaKodu].push({ id: socket.id, isim });
     io.to(odaKodu).emit("oyuncuListesi", odalar[odaKodu]);
   });
 
@@ -39,9 +38,7 @@ io.on("connection", (socket) => {
     const oyuncular = odalar[odaKodu];
     if (!oyuncular) return;
 
-    // Tüm oyuncuların oy bilgisini sıfırla
-    oyuncular.forEach(o => o.oyVerdi = false);
-    oylar[odaKodu] = {};
+    oylar[odaKodu] = {}; // oyları sıfırla
 
     const kelime = kelimeler[Math.floor(Math.random() * kelimeler.length)];
     const impostorIndex = Math.floor(Math.random() * oyuncular.length);
@@ -57,38 +54,45 @@ io.on("connection", (socket) => {
     io.to(odaKodu).emit("oyuncuListesi", oyuncular);
   });
 
+  // ✅ OYLAMA
   socket.on("oyVer", ({ odaKodu, hedefId }) => {
-    const oyuncular = odalar[odaKodu];
-    const oyuKullanan = oyuncular.find(o => o.id === socket.id);
-    if (!oyuKullanan) return;
+    if (!odalar[odaKodu]) return;
 
-    // Oy geri alma
-    if (hedefId === null) {
-      for (let id in oylar[odaKodu]) {
-        if (id === socket.id) continue;
-      }
-      oyuKullanan.oyVerdi = false;
-    } else {
-      if (oyuKullanan.oyVerdi) return; // sadece 1 kere oy
-      oylar[odaKodu][hedefId] = (oylar[odaKodu][hedefId] || 0) + 1;
-      oyuKullanan.oyVerdi = true;
-    }
+    if (!oylar[odaKodu]) oylar[odaKodu] = {};
 
-    io.to(odaKodu).emit("oyuncuListesi", oyuncular);
-    io.to(odaKodu).emit("oySonucu", { oylar: oylar[odaKodu] });
+    // oyuncunun oyunu güncellenir
+    oylar[odaKodu][socket.id] = hedefId;
+
+    // sayım
+    let sayim = {};
+    Object.values(oylar[odaKodu]).forEach(h => {
+      if (h) sayim[h] = (sayim[h] || 0) + 1;
+    });
+
+    io.to(odaKodu).emit("oySonucu", { oylar: sayim });
   });
 
-  // CHAT sistemi
-  socket.on("chatMesaj", ({ odaKodu, isim, mesaj }) => {
-    io.to(odaKodu).emit("chatMesaj", { isim, mesaj });
+  // ✅ CHAT
+  socket.on("mesajGonder", ({ odaKodu, isim, mesaj }) => {
+    io.to(odaKodu).emit("mesajAl", { isim, mesaj, id: socket.id });
   });
 
+  // ✅ Çıkış
   socket.on("disconnect", () => {
     for (let oda in odalar) {
       odalar[oda] = odalar[oda].filter(o => o.id !== socket.id);
-      delete oylar[oda]?.[socket.id];
+
+      if (oylar[oda]) {
+        delete oylar[oda][socket.id];
+      }
+
+      let sayim = {};
+      Object.values(oylar[oda] || {}).forEach(h => {
+        if (h) sayim[h] = (sayim[h] || 0) + 1;
+      });
+
       io.to(oda).emit("oyuncuListesi", odalar[oda]);
-      io.to(oda).emit("oySonucu", { oylar: oylar[oda] || {} });
+      io.to(oda).emit("oySonucu", { oylar: sayim });
     }
   });
 });
