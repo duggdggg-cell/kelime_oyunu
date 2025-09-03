@@ -6,13 +6,10 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
-app.use(express.static(__dirname)); // index.html'i sunmak için
+app.use(express.static(__dirname));
 
-// 700+ farklı kelime eklenmiş
-const kelimeler = [
-  "Elma","Bilgisayar","Masa","Futbol","Araba","Kedi","Deniz","Kalem","Telefon",
-  // ... Buraya 700+ farklı kelimeyi ekle
-];
+// Örnek 700+ kelime, kendi listenle değiştir
+const kelimeler = ["Elma","Bilgisayar","Masa","Futbol","Araba","Kedi","Deniz","Kalem","Telefon"];
 
 let odalar = {};
 let oylar = {};
@@ -24,8 +21,6 @@ io.on("connection", (socket) => {
     socket.join(odaKodu);
     if (!odalar[odaKodu]) odalar[odaKodu] = [];
     odalar[odaKodu].push({ id: socket.id, isim });
-    console.log(`${isim} (${socket.id}) ${odaKodu} odasına katıldı.`);
-
     io.to(odaKodu).emit("oyuncuGuncelle", odalar[odaKodu]);
   });
 
@@ -71,7 +66,6 @@ io.on("connection", (socket) => {
   });
 
   socket.on("disconnect", () => {
-    console.log("Oyuncu ayrıldı:", socket.id);
     for (let oda in odalar) {
       odalar[oda] = odalar[oda].filter((o) => o.id !== socket.id);
       io.to(oda).emit("oyuncuGuncelle", odalar[oda]);
@@ -79,6 +73,4 @@ io.on("connection", (socket) => {
   });
 });
 
-server.listen(3000, () => {
-  console.log("Sunucu 3000 portunda çalışıyor...");
-});
+server.listen(3000, () => console.log("Sunucu 3000 portunda çalışıyor..."));
