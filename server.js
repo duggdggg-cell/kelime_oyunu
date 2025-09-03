@@ -17,6 +17,7 @@ const kelimeler = [
   "Müzik","Film","Dizi","Kitaplık","Resim","Fotoğraf","Tiyatro","Müzikali","Senaryo","Karikatür",
   "Pizza","Makarna","Çorba","Salata","Ekmek","Peynir","Tereyağı","Bal","Reçel","Süt",
   "Hediye","Kart","Zarf","Pul","Posta","Mesaj","Video","Tren","Uçak","Gemi"
+  // 800 kelime tamamlanacak şekilde eklenebilir
 ];
 
 let odalar = {};
@@ -31,7 +32,6 @@ io.on("connection", (socket) => {
     if (!oylar[odaKodu]) oylar[odaKodu] = {};
 
     odalar[odaKodu].push({ id: socket.id, isim, oyVerdi: false });
-    socket.data = { isim, odaKodu }; // oyuncu bilgilerini sakla
     io.to(odaKodu).emit("oyuncuListesi", odalar[odaKodu]);
   });
 
@@ -39,6 +39,7 @@ io.on("connection", (socket) => {
     const oyuncular = odalar[odaKodu];
     if (!oyuncular) return;
 
+    // Tüm oyuncuların oy bilgisini sıfırla
     oyuncular.forEach(o => o.oyVerdi = false);
     oylar[odaKodu] = {};
 
@@ -59,20 +60,27 @@ io.on("connection", (socket) => {
   socket.on("oyVer", ({ odaKodu, hedefId }) => {
     const oyuncular = odalar[odaKodu];
     const oyuKullanan = oyuncular.find(o => o.id === socket.id);
-    if (!oyuKullanan || oyuKullanan.oyVerdi) return;
+    if (!oyuKullanan) return;
 
-    oylar[odaKodu][hedefId] = (oylar[odaKodu][hedefId] || 0) + 1;
-    oyuKullanan.oyVerdi = true;
+    // Oy geri alma
+    if (hedefId === null) {
+      for (let id in oylar[odaKodu]) {
+        if (id === socket.id) continue;
+      }
+      oyuKullanan.oyVerdi = false;
+    } else {
+      if (oyuKullanan.oyVerdi) return; // sadece 1 kere oy
+      oylar[odaKodu][hedefId] = (oylar[odaKodu][hedefId] || 0) + 1;
+      oyuKullanan.oyVerdi = true;
+    }
 
     io.to(odaKodu).emit("oyuncuListesi", oyuncular);
     io.to(odaKodu).emit("oySonucu", { oylar: oylar[odaKodu] });
   });
 
-  // CHAT mesajı
-  socket.on("chatMesaj", (mesaj) => {
-    const { odaKodu, isim } = socket.data;
-    if (!odaKodu || !isim) return;
-    io.to(odaKodu).emit("chatMesaj", { isim, mesaj, id: socket.id });
+  // CHAT sistemi
+  socket.on("chatMesaj", ({ odaKodu, isim, mesaj }) => {
+    io.to(odaKodu).emit("chatMesaj", { isim, mesaj });
   });
 
   socket.on("disconnect", () => {
