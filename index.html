@@ -38,15 +38,17 @@ button:hover { background:#6a11cb; transform:scale(1.05); }
 }
 #baslatBtn:hover { transform: translateX(-50%) scale(1.05); box-shadow:0 6px 16px rgba(0,0,0,0.4);}
 
-/* Chat */
-#oyunEkrani { display:flex; justify-content:space-between; }
+/* Oyun ekranı layout */
+#oyunEkrani { display:flex; justify-content:flex-start; align-items:flex-start; position:relative; }
 #oyuncular, #oySonucu { flex:1; margin-right:20px; }
-#chatEkrani { flex:0 0 250px; background:rgba(255,255,255,0.95); padding:15px; border-radius:15px; color:black; box-shadow:0 4px 20px rgba(0,0,0,0.2); display:flex; flex-direction:column; }
-#chatMesajlar { height:300px; overflow-y:auto; flex-grow:1; display:flex; flex-direction:column; }
-.chatMesaj { max-width:80%; padding:8px 12px; border-radius:15px; margin:5px 0; box-shadow:0 2px 6px rgba(0,0,0,0.2); }
+
+/* Chat */
+#chatEkrani { width:200px; height:350px; background:rgba(255,255,255,0.95); padding:10px; border-radius:12px; color:black; box-shadow:0 4px 12px rgba(0,0,0,0.2); display:flex; flex-direction:column; position:fixed; right:30px; top:50%; transform:translateY(-50%); }
+#chatMesajlar { height:100%; overflow-y:auto; flex-grow:1; display:flex; flex-direction:column; }
+.chatMesaj { max-width:90%; padding:6px 10px; border-radius:12px; margin:3px 0; box-shadow:0 2px 6px rgba(0,0,0,0.2); font-size:14px; }
 .chatKendi { align-self:flex-end; background: #2575fc; color:white; border-bottom-right-radius:0; }
 .chatBaska { align-self:flex-start; background: #e0e0e0; color:black; border-bottom-left-radius:0; }
-#chatInput { margin-top:10px; width: calc(100% - 24px); }
+#chatInput { margin-top:5px; width:100%; box-sizing:border-box; }
 #chatEkrani button { margin-top:5px; width:100%; }
 </style>
 </head>
@@ -69,9 +71,9 @@ button:hover { background:#6a11cb; transform:scale(1.05); }
     <ul id="oySonucu"></ul>
   </div>
 
-  <!-- Chat -->
+  <!-- Chat sadece oyun ekranında -->
   <div id="chatEkrani">
-    <h3>Oyun İçi Chat</h3>
+    <h4>Chat</h4>
     <div id="chatMesajlar"></div>
     <input id="chatInput" placeholder="Mesajınızı yazın...">
     <button onclick="mesajGonder()">Gönder</button>
@@ -159,16 +161,16 @@ function mesajGonder(){
   document.getElementById("chatInput").value="";
 }
 
-socket.on("chatGuncelle", ({isim, mesaj})=>{
+socket.on("chatGuncelle", ({isim: gonderen, mesaj})=>{
   const div = document.getElementById("chatMesajlar");
   const p = document.createElement("div");
   p.classList.add("chatMesaj");
-  if(isim === isim){ // kendi mesajımız
+  if(gonderen === isim){
     p.classList.add("chatKendi");
   } else {
     p.classList.add("chatBaska");
   }
-  p.textContent = `${isim}: ${mesaj}`;
+  p.textContent = `${gonderen}: ${mesaj}`;
   div.appendChild(p);
   div.scrollTop = div.scrollHeight;
 });
