@@ -16,59 +16,54 @@ button:hover { background:#6a11cb; transform:scale(1.05); }
 #oyuncular, #oySonucu { margin-top:20px; padding:0; list-style:none; display:flex; flex-wrap:wrap; justify-content:center; }
 #oyuncular li, #oySonucu li { background:#2575fc; color:white; padding:8px 12px; margin:5px; border-radius:12px; font-weight:500; transition: transform 0.3s; }
 #oyuncular li:hover, #oySonucu li:hover { transform:scale(1.1); }
-#baslatBtn {
-  position: fixed;
-  bottom: 140px;
-  left: 50%;
+
+#baslatBtn { 
+  position: fixed; 
+  bottom: 140px; 
+  left: 50%; 
   transform: translateX(-50%);
-  display:none;
-  padding:12px 48px;
-  font-weight:bold;
+  display:none; 
+  padding:12px 48px; 
+  font-weight:bold; 
   background: linear-gradient(135deg, #6a11cb, #2575fc);
-  color:white;
-  border-radius:12px;
-  border:none;
-  cursor:pointer;
-  box-shadow:0 4px 12px rgba(0,0,0,0.3);
-  transition: all 0.3s ease;
-  font-size:16px;
+  color:white; 
+  border-radius:12px; 
+  border:none; 
+  cursor:pointer; 
+  box-shadow:0 4px 12px rgba(0,0,0,0.3); 
+  transition: all 0.3s ease; 
+  font-size:16px; 
   max-width:320px;
 }
-#baslatBtn:hover { transform: translateX(-50%) scale(1.05); box-shadow:0 6px 16px rgba(0,0,0,0.4); }
+#baslatBtn:hover { transform: translateX(-50%) scale(1.05); box-shadow:0 6px 16px rgba(0,0,0,0.4);}
 
-/* ✅ Chat */
-#chat {
-  position: fixed;
-  right: 20px;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 250px;
-  height: 400px;
-  background: rgba(255,255,255,0.95);
-  color: #333;
-  border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-  display: none;
-  flex-direction: column;
+/* Chat panel */
+#chatPanel { 
+  position: absolute; 
+  top: 30px; 
+  right: -260px; 
+  width: 220px; 
+  height: 350px; 
+  background: rgba(255,255,255,0.95); 
+  color: #333; 
+  border-radius:12px; 
+  padding:10px; 
+  display:flex; 
+  flex-direction: column; 
+  box-shadow: 0 4px 20px rgba(0,0,0,0.3);
 }
-#chatMesajlar {
-  flex: 1;
-  overflow-y: auto;
-  padding: 10px;
-}
-#chatMesajlar div {
-  margin: 5px 0;
-  padding: 6px 10px;
-  border-radius: 8px;
-}
-.mesajBen { background: #6a11cb; color: white; text-align: right; }
-.mesajDiger { background: #ddd; color: black; text-align: left; }
-#chatForm { display:flex; border-top: 1px solid #ccc; }
-#chatInput { flex:1; padding:8px; border:none; border-radius:0 0 0 12px; }
-#chatGonder { padding:8px 12px; border:none; background:#2575fc; color:white; cursor:pointer; border-radius:0 0 12px 0; }
+#chatMesajlar { flex:1; overflow-y:auto; margin-bottom:5px; display:flex; flex-direction: column; }
+.chatMesaj { max-width:90%; padding:6px 10px; border-radius:12px; margin:3px 0; box-shadow:0 2px 6px rgba(0,0,0,0.2); font-size:14px; word-break: break-word; }
+.chatKendi { align-self:flex-end; background: #2575fc; color:white; border-bottom-right-radius:0; }
+.chatBaska { align-self:flex-start; background: #e0e0e0; color:black; border-bottom-left-radius:0; }
+#chatInput { display:flex; }
+#chatInput input { flex:1; padding:6px 8px; font-size:14px; border-radius:6px; border:1px solid #ccc; }
+#chatInput button { margin-left:4px; padding:6px 12px; border:none; border-radius:6px; background:#2575fc; color:white; cursor:pointer; }
+#chatInput button:hover { background:#6a11cb; }
 </style>
 </head>
 <body>
+
 <div id="girisEkrani" class="ekran aktif">
   <h2>Kelime Oyunu</h2>
   <input id="isim" placeholder="İsminizi girin">
@@ -83,18 +78,18 @@ button:hover { background:#6a11cb; transform:scale(1.05); }
   <ul id="oyuncular"></ul>
   <h3>Oylama</h3>
   <ul id="oySonucu"></ul>
+
+  <!-- Chat panel -->
+  <div id="chatPanel">
+    <div id="chatMesajlar"></div>
+    <div id="chatInput">
+      <input type="text" id="chatMesaj" placeholder="Mesaj yazın...">
+      <button onclick="gonderMesaj()">Gönder</button>
+    </div>
+  </div>
 </div>
 
 <button id="baslatBtn" onclick="oyunuBaslat()">Oyunu Başlat</button>
-
-<!-- ✅ Chat -->
-<div id="chat">
-  <div id="chatMesajlar"></div>
-  <form id="chatForm" onsubmit="gonderMesaj(event)">
-    <input id="chatInput" placeholder="Mesaj yaz..." autocomplete="off">
-    <button id="chatGonder">Gönder</button>
-  </form>
-</div>
 
 <script>
 const socket = io();
@@ -108,10 +103,17 @@ function odaKatıl(){
   document.getElementById("girisEkrani").classList.remove("aktif");
   document.getElementById("oyunEkrani").classList.add("aktif");
   document.getElementById("baslatBtn").style.display="block";
-  document.getElementById("chat").style.display="flex";
 }
 
 function oyunuBaslat(){ socket.emit("oyunuBaslat", odaKodu); }
+
+function gonderMesaj(){
+  const msgInput = document.getElementById("chatMesaj");
+  const mesaj = msgInput.value.trim();
+  if(!mesaj) return;
+  socket.emit("chatGonder", {odaKodu, isim, mesaj});
+  msgInput.value="";
+}
 
 socket.on("rol", data => {
   document.getElementById("rol").innerText=data.rol;
@@ -127,34 +129,59 @@ socket.on("oyuncuListesi", oyuncular => {
     li.textContent=o.isim;
     ul.appendChild(li);
   });
+
+  const oyUl = document.getElementById("oySonucu");
+  oyUl.innerHTML="";
+  oyuncular.forEach(o=>{
+    const li = document.createElement("li");
+    li.innerHTML = `<input type="checkbox" class="oyCheckbox" data-id="${o.id}"> ${o.isim} - 0 oy`;
+    oyUl.appendChild(li);
+  });
+
+  document.querySelectorAll(".oyCheckbox").forEach(cb=>{
+    cb.addEventListener("click", e=>{
+      const secili = e.target;
+      if(secili.checked){
+        document.querySelectorAll(".oyCheckbox").forEach(c=>{if(c!==secili) c.checked=false;});
+        socket.emit("oyVer",{odaKodu, hedefId: secili.dataset.id});
+      } else {
+        socket.emit("oyVer",{odaKodu, hedefId: null});
+      }
+    });
+  });
 });
 
 socket.on("oySonucu", ({oylar})=>{
-  const oyUl = document.getElementById("oySonucu");
-  oyUl.innerHTML="";
-  for(const id in oylar){
-    const li=document.createElement("li");
-    li.textContent=`${id} - ${oylar[id]} oy`;
-    oyUl.appendChild(li);
-  }
+  document.querySelectorAll("#oySonucu li").forEach(li=>{
+    const id = li.querySelector("input").dataset.id;
+    li.innerHTML = `<input type="checkbox" class="oyCheckbox" data-id="${id}"> ${li.textContent.split('-')[0].trim()} - ${oylar[id]||0} oy`;
+  });
+
+  document.querySelectorAll(".oyCheckbox").forEach(cb=>{
+    cb.addEventListener("click", e=>{
+      const secili = e.target;
+      if(secili.checked){
+        document.querySelectorAll(".oyCheckbox").forEach(c=>{if(c!==secili) c.checked=false;});
+        socket.emit("oyVer",{odaKodu, hedefId: secili.dataset.id});
+      } else {
+        socket.emit("oyVer",{odaKodu, hedefId: null});
+      }
+    });
+  });
 });
 
-// ✅ Chat
-function gonderMesaj(e){
-  e.preventDefault();
-  const mesaj = document.getElementById("chatInput").value.trim();
-  if(mesaj){
-    socket.emit("mesajGonder",{odaKodu, isim, mesaj});
-    document.getElementById("chatInput").value="";
+socket.on("chatGuncelle", ({isim: gonderen, mesaj})=>{
+  const div = document.getElementById("chatMesajlar");
+  const p = document.createElement("div");
+  p.classList.add("chatMesaj");
+  if(gonderen === isim){
+    p.classList.add("chatKendi");
+  } else {
+    p.classList.add("chatBaska");
   }
-}
-
-socket.on("mesajAl", ({isim: gonderen, mesaj})=>{
-  const div=document.createElement("div");
-  div.textContent=`${gonderen}: ${mesaj}`;
-  div.className = (gonderen===isim) ? "mesajBen" : "mesajDiger";
-  document.getElementById("chatMesajlar").appendChild(div);
-  document.getElementById("chatMesajlar").scrollTop = document.getElementById("chatMesajlar").scrollHeight;
+  p.textContent = `${gonderen}: ${mesaj}`;
+  div.appendChild(p);
+  div.scrollTop = div.scrollHeight;
 });
 </script>
 </body>
