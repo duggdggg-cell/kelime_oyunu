@@ -5,16 +5,66 @@
 <title>Kelime Oyunu</title>
 <script src="/socket.io/socket.io.js"></script>
 <style>
-body { font-family: sans-serif; background: linear-gradient(to right, #6a11cb, #2575fc); margin:0; display:flex; justify-content:center; align-items:center; height:100vh; color:#fff;}
-.ekran { display:none; text-align:center; background:rgba(255,255,255,0.95); color:#333; padding:30px; border-radius:15px; box-shadow:0 4px 20px rgba(0,0,0,0.3); width:450px; max-width:90%; position:relative;}
+body {
+  font-family: sans-serif;
+  background: linear-gradient(to right, #6a11cb, #2575fc);
+  margin:0;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  height:100vh;
+  color:#fff;
+}
+.ekran {
+  display:none;
+  text-align:center;
+  background:rgba(255,255,255,0.95);
+  color:#333;
+  padding:30px;
+  border-radius:15px;
+  box-shadow:0 4px 20px rgba(0,0,0,0.3);
+  width:450px;
+  max-width:90%;
+  position:relative;
+}
 .aktif { display:block; }
-input, button { padding:12px; margin:10px 0; width:80%; border-radius:8px; border:1px solid #ccc; font-size:16px; }
-button { background:#2575fc; color:white; cursor:pointer; font-weight:bold; }
-button:hover { background:#6a11cb; transform:scale(1.05); }
+input, button {
+  padding:12px;
+  margin:10px 0;
+  width:80%;
+  border-radius:8px;
+  border:1px solid #ccc;
+  font-size:16px;
+}
+button {
+  background:#2575fc;
+  color:white;
+  cursor:pointer;
+  font-weight:bold;
+}
+button:hover {
+  background:#6a11cb;
+  transform:scale(1.05);
+}
 #rol { font-size:24px; font-weight:bold; margin-top:20px; }
 #kelime { font-size:28px; color:green; margin-top:15px; font-weight:bold; }
-#oyuncular, #oySonucu { margin-top:20px; padding:0; list-style:none; display:flex; flex-wrap:wrap; justify-content:center; }
-#oyuncular li, #oySonucu li { background:#2575fc; color:white; padding:8px 12px; margin:5px; border-radius:12px; font-weight:500; transition: transform 0.3s; }
+#oyuncular, #oySonucu {
+  margin-top:20px;
+  padding:0;
+  list-style:none;
+  display:flex;
+  flex-wrap:wrap;
+  justify-content:center;
+}
+#oyuncular li, #oySonucu li {
+  background:#2575fc;
+  color:white;
+  padding:8px 12px;
+  margin:5px;
+  border-radius:12px;
+  font-weight:500;
+  transition: transform 0.3s;
+}
 #oyuncular li:hover, #oySonucu li:hover { transform:scale(1.1); }
 #baslatBtn { 
   position: fixed; 
@@ -22,7 +72,7 @@ button:hover { background:#6a11cb; transform:scale(1.05); }
   left: 50%; 
   transform: translateX(-50%);
   display:none; 
-  padding:12px 48px;
+  padding:12px 48px; 
   font-weight:bold; 
   background: linear-gradient(135deg, #6a11cb, #2575fc);
   color:white; 
@@ -34,31 +84,74 @@ button:hover { background:#6a11cb; transform:scale(1.05); }
   font-size:16px; 
   max-width:320px;
 }
-#baslatBtn:hover { transform: translateX(-50%) scale(1.05); box-shadow:0 6px 16px rgba(0,0,0,0.4);}
-
-/* CHAT */
-#chatContainer { 
-  display:none; 
-  position: fixed; 
-  right: 20px; 
-  top: 50%; 
-  transform: translateY(-50%);
-  width: 260px; 
-  height: 400px; 
-  background:white; 
-  color:black; 
-  border-radius:12px; 
-  box-shadow:0 4px 12px rgba(0,0,0,0.3); 
-  display:flex; 
-  flex-direction:column;
+#baslatBtn:hover {
+  transform: translateX(-50%) scale(1.05);
+  box-shadow:0 6px 16px rgba(0,0,0,0.4);
 }
-#chatMessages { flex:1; padding:10px; overflow-y:auto; }
-.message { margin:5px; padding:8px 12px; border-radius:12px; max-width:70%; word-wrap:break-word; }
-.message.own { background:#2575fc; color:white; margin-left:auto; text-align:right; }
-.message.other { background:#e5e5ea; color:black; margin-right:auto; text-align:left; }
-#chatInputContainer { display:flex; padding:5px; border-top:1px solid #ccc; }
-#chatInput { flex:1; padding:8px; border:1px solid #ccc; border-radius:8px; }
-#chatSend { padding:8px 12px; margin-left:5px; background:#2575fc; color:white; border:none; border-radius:8px; cursor:pointer; }
+
+/* Chat */
+.chat {
+  position: fixed;
+  right: 20px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 260px;
+  height: 400px;
+  background: white;
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow:0 4px 12px rgba(0,0,0,0.3);
+}
+#messages {
+  flex: 1;
+  padding: 10px;
+  overflow-y: auto;
+}
+.message {
+  margin: 5px 0;
+  padding: 8px 12px;
+  border-radius: 12px;
+  max-width: 70%;
+  word-wrap: break-word;
+}
+.message.self {
+  background: #2575fc;
+  color: white;
+  margin-left: auto;
+  text-align: right;
+}
+.message.other {
+  background: #e5e5ea;
+  color: black;
+  margin-right: auto;
+  text-align: left;
+}
+#inputArea {
+  display: flex;
+  border-top: 1px solid #ccc;
+}
+#messageInput {
+  flex: 1;
+  border: none;
+  padding: 10px;
+  font-size: 14px;
+}
+#sendBtn {
+  padding: 6px 10px;
+  border-radius: 50%;
+  font-size: 14px;
+  font-weight: bold;
+  background: #2575fc;
+  color: white;
+  border: none;
+  cursor: pointer;
+  margin: 5px;
+  width: 36px;
+  height: 36px;
+}
+#sendBtn:hover { background: #6a11cb; }
 </style>
 </head>
 <body>
@@ -78,12 +171,12 @@ button:hover { background:#6a11cb; transform:scale(1.05); }
   <ul id="oySonucu"></ul>
 </div>
 
-<!-- CHAT -->
-<div id="chatContainer">
-  <div id="chatMessages"></div>
-  <div id="chatInputContainer">
-    <input id="chatInput" placeholder="Mesaj yaz...">
-    <button id="chatSend">Gönder</button>
+<!-- Chat başlangıçta gizli -->
+<div id="chat" class="chat" style="display:none;">
+  <div id="messages"></div>
+  <div id="inputArea">
+    <input id="messageInput" placeholder="Mesaj yaz...">
+    <button id="sendBtn">&gt;</button>
   </div>
 </div>
 
@@ -101,7 +194,7 @@ function odaKatıl(){
   document.getElementById("girisEkrani").classList.remove("aktif");
   document.getElementById("oyunEkrani").classList.add("aktif");
   document.getElementById("baslatBtn").style.display="block";
-  document.getElementById("chatContainer").style.display="flex";
+  document.getElementById("chat").style.display="flex"; // Chat açılıyor
 }
 
 function oyunuBaslat(){ socket.emit("oyunuBaslat", odaKodu); }
@@ -120,46 +213,71 @@ socket.on("oyuncuListesi", oyuncular => {
     li.textContent=o.isim;
     ul.appendChild(li);
   });
-});
 
-socket.on("oySonucu", ({oylar})=>{
-  const ul = document.getElementById("oySonucu");
-  ul.innerHTML="";
-  const oyuncular = document.querySelectorAll("#oyuncular li");
+  const oyUl = document.getElementById("oySonucu");
+  oyUl.innerHTML="";
   oyuncular.forEach(o=>{
-    const isim = o.textContent;
-    let oySayisi = 0;
-    for (let id in oylar) {
-      if (id === o.dataset?.id) oySayisi = oylar[id];
-    }
-    const li=document.createElement("li");
-    li.textContent = `${isim} - ${oySayisi||0} oy`;
-    ul.appendChild(li);
+    const li = document.createElement("li");
+    li.innerHTML = `<input type="checkbox" class="oyCheckbox" data-id="${o.id}"> ${o.isim} - 0 oy`;
+    oyUl.appendChild(li);
+  });
+
+  document.querySelectorAll(".oyCheckbox").forEach(cb=>{
+    cb.addEventListener("click", e=>{
+      const secili = e.target;
+      if(secili.checked){
+        document.querySelectorAll(".oyCheckbox").forEach(c=>{if(c!==secili) c.checked=false;});
+        socket.emit("oyVer",{odaKodu, hedefId: secili.dataset.id});
+      } else {
+        socket.emit("oyVer",{odaKodu, hedefId: null});
+      }
+    });
   });
 });
 
-// ✅ CHAT
-document.getElementById("chatSend").addEventListener("click", gonderMesaj);
-document.getElementById("chatInput").addEventListener("keypress", e=>{
-  if(e.key==="Enter"){ gonderMesaj(); }
+socket.on("oySonucu", ({oylar})=>{
+  document.querySelectorAll("#oySonucu li").forEach(li=>{
+    const id = li.querySelector("input").dataset.id;
+    li.innerHTML = `<input type="checkbox" class="oyCheckbox" data-id="${id}"> ${li.textContent.split('-')[0].trim()} - ${oylar[id]||0} oy`;
+  });
+
+  document.querySelectorAll(".oyCheckbox").forEach(cb=>{
+    cb.addEventListener("click", e=>{
+      const secili = e.target;
+      if(secili.checked){
+        document.querySelectorAll(".oyCheckbox").forEach(c=>{if(c!==secili) c.checked=false;});
+        socket.emit("oyVer",{odaKodu, hedefId: secili.dataset.id});
+      } else {
+        socket.emit("oyVer",{odaKodu, hedefId: null});
+      }
+    });
+  });
+});
+
+// CHAT
+document.getElementById("sendBtn").addEventListener("click", gonderMesaj);
+document.getElementById("messageInput").addEventListener("keydown", e=>{
+  if(e.key==="Enter") gonderMesaj();
 });
 
 function gonderMesaj(){
-  const input=document.getElementById("chatInput");
-  const mesaj=input.value.trim();
-  if(mesaj){
-    socket.emit("mesajGonder",{odaKodu, isim, mesaj});
+  const input=document.getElementById("messageInput");
+  const text=input.value.trim();
+  if(text){
+    socket.emit("chatMesaj",{odaKodu, isim, mesaj:text});
     input.value="";
   }
 }
 
-socket.on("mesajAl", ({isim: gonderen, mesaj, id})=>{
+socket.on("chatMesaj", ({isim: gonderen, mesaj})=>{
+  const messages=document.getElementById("messages");
   const div=document.createElement("div");
   div.classList.add("message");
-  div.classList.add(id===socket.id ? "own" : "other");
-  div.textContent = `${gonderen}: ${mesaj}`;
-  document.getElementById("chatMessages").appendChild(div);
-  document.getElementById("chatMessages").scrollTop=document.getElementById("chatMessages").scrollHeight;
+  if(gonderen===isim) div.classList.add("self");
+  else div.classList.add("other");
+  div.textContent=`${gonderen}: ${mesaj}`;
+  messages.appendChild(div);
+  messages.scrollTop=messages.scrollHeight;
 });
 </script>
 </body>
