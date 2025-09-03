@@ -17,45 +17,31 @@ const kelimeler = [
   "Müzik","Film","Dizi","Kitaplık","Resim","Fotoğraf","Tiyatro","Müzikali","Senaryo","Karikatür",
   "Pizza","Makarna","Çorba","Salata","Ekmek","Peynir","Tereyağı","Bal","Reçel","Süt",
   "Hediye","Kart","Zarf","Pul","Posta","Mesaj","Video","Tren","Uçak","Gemi"
-  // 800 kelimeye kadar ekleyebilirsiniz
 ];
 
-let odalar = {};             // odaKodu -> [{id, isim}]
-let votesByVoter = {};       // odaKodu -> { voterId: targetId|null }
-
-function tallyForRoom(odaKodu) {
-  const sayim = {};
-  const votes = votesByVoter[odaKodu] || {};
-  Object.values(votes).forEach(targetId => {
-    if (!targetId) return;
-    sayim[targetId] = (sayim[targetId] || 0) + 1;
-  });
-  return sayim;
-}
+let odalar = {};
+let oylar = {};
 
 io.on("connection", (socket) => {
   console.log("Bir oyuncu bağlandı:", socket.id);
 
   socket.on("odaKatıl", ({ odaKodu, isim }) => {
     socket.join(odaKodu);
-
     if (!odalar[odaKodu]) odalar[odaKodu] = [];
-    if (!votesByVoter[odaKodu]) votesByVoter[odaKodu] = {};
+    if (!oylar[odaKodu]) oylar[odaKodu] = {};
 
-    odalar[odaKodu].push({ id: socket.id, isim });
+    odalar[odaKodu].push({ id: socket.id, isim, oyVerdi: false });
+    socket.data = { isim, odaKodu }; // oyuncu bilgilerini sakla
     io.to(odaKodu).emit("oyuncuListesi", odalar[odaKodu]);
-    io.to(odaKodu).emit("oySonucu", { sayim: tallyForRoom(odaKodu) });
   });
 
   socket.on("oyunuBaslat", (odaKodu) => {
     const oyuncular = odalar[odaKodu];
-    if (!oyuncular || oyuncular.length === 0) return;
+    if (!oyuncular) return;
 
-    // Oyları sıfırla
-    votesByVoter[odaKodu] = {};
-    io.to(odaKodu).emit("oySonucu", { sayim: {} });
+    oyuncular.forEach(o => o.oyVerdi = false);
+    oylar[odaKodu] = {};
 
-    // Roller & kelime
     const kelime = kelimeler[Math.floor(Math.random() * kelimeler.length)];
     const impostorIndex = Math.floor(Math.random() * oyuncular.length);
 
@@ -70,31 +56,31 @@ io.on("connection", (socket) => {
     io.to(odaKodu).emit("oyuncuListesi", oyuncular);
   });
 
-  // Oy ver / oy geri al (hedefId null ise geri al)
   socket.on("oyVer", ({ odaKodu, hedefId }) => {
-    if (!odalar[odaKodu]) return;
+    const oyuncular = odalar[odaKodu];
+    const oyuKullanan = oyuncular.find(o => o.id === socket.id);
+    if (!oyuKullanan || oyuKullanan.oyVerdi) return;
 
-    // hedef geçerli mi?
-    if (hedefId && !odalar[odaKodu].some(o => o.id === hedefId)) return;
+    oylar[odaKodu][hedefId] = (oylar[odaKodu][hedefId] || 0) + 1;
+    oyuKullanan.oyVerdi = true;
 
-    if (!votesByVoter[odaKodu]) votesByVoter[odaKodu] = {};
-    votesByVoter[odaKodu][socket.id] = hedefId || null; // tek aktif oy
+    io.to(odaKodu).emit("oyuncuListesi", oyuncular);
+    io.to(odaKodu).emit("oySonucu", { oylar: oylar[odaKodu] });
+  });
 
-    const sayim = tallyForRoom(odaKodu);
-    io.to(odaKodu).emit("oySonucu", { sayim });
+  // CHAT mesajı
+  socket.on("chatMesaj", (mesaj) => {
+    const { odaKodu, isim } = socket.data;
+    if (!odaKodu || !isim) return;
+    io.to(odaKodu).emit("chatMesaj", { isim, mesaj, id: socket.id });
   });
 
   socket.on("disconnect", () => {
-    for (const oda of Object.keys(odalar)) {
-      const onceki = odalar[oda].length;
+    for (let oda in odalar) {
       odalar[oda] = odalar[oda].filter(o => o.id !== socket.id);
-      if (votesByVoter[oda]) {
-        delete votesByVoter[oda][socket.id]; // oyuncunun oyu düşsün
-      }
-      if (odalar[oda].length !== onceki) {
-        io.to(oda).emit("oyuncuListesi", odalar[oda]);
-        io.to(oda).emit("oySonucu", { sayim: tallyForRoom(oda) });
-      }
+      delete oylar[oda]?.[socket.id];
+      io.to(oda).emit("oyuncuListesi", odalar[oda]);
+      io.to(oda).emit("oySonucu", { oylar: oylar[oda] || {} });
     }
   });
 });
