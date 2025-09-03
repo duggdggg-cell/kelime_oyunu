@@ -1,23 +1,24 @@
 const express = require("express");
 const http = require("http");
 const { Server } = require("socket.io");
+const path = require("path");
 
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
+// Static dosyaları servis et
 app.use(express.static(__dirname));
 
 const kelimeler = [
-  "Elma","Bilgisayar","Masa","Futbol","Araba","Kedi","Deniz","Kalem","Telefon",
-  "Lamba","Saat","Kitap","Sandalye","Köpek","Çanta","Tencere","Bardak","Çiçek","Pencere",
-  "Dağ","Nehir","Göl","Köprü","Yol","Otel","Hastane","Okul","Ders","Tahta",
-  "Bilet","Para","Cüzdan","Anahtar","Gözlük","Kamera","Mikrofon","Laptop","Tablet","Kulaklık",
-  "Bot","Ayakkabı","Elbise","Şapka","Mont","Atkı","Eldiven","Kazak","Pantolon","Çorap",
-  "Müzik","Film","Dizi","Kitaplık","Resim","Fotoğraf","Tiyatro","Müzikali","Senaryo","Karikatür",
-  "Pizza","Makarna","Çorba","Salata","Ekmek","Peynir","Tereyağı","Bal","Reçel","Süt",
-  "Hediye","Kart","Zarf","Pul","Posta","Mesaj","Video","Tren","Uçak","Gemi"
-  // 800 kelime tamamlanacak şekilde eklenebilir
+  "Elma", "Bilgisayar", "Masa", "Futbol", "Araba", "Kedi", "Deniz", "Kalem", "Telefon",
+  "Lamba", "Saat", "Kitap", "Sandalye", "Köpek", "Çanta", "Tencere", "Bardak", "Çiçek", "Pencere",
+  "Dağ", "Nehir", "Göl", "Köprü", "Yol", "Otel", "Hastane", "Okul", "Ders", "Tahta",
+  "Bilet", "Para", "Cüzdan", "Anahtar", "Gözlük", "Kamera", "Mikrofon", "Laptop", "Tablet", "Kulaklık",
+  "Bot", "Ayakkabı", "Elbise", "Şapka", "Mont", "Atkı", "Eldiven", "Kazak", "Pantolon", "Çorap",
+  "Müzik", "Film", "Dizi", "Kitaplık", "Resim", "Fotoğraf", "Tiyatro", "Müzikali", "Senaryo", "Karikatür",
+  "Pizza", "Makarna", "Çorba", "Salata", "Ekmek", "Peynir", "Tereyağı", "Bal", "Reçel", "Süt",
+  "Hediye", "Kart", "Zarf", "Pul", "Posta", "Mesaj", "Video", "Tren", "Uçak", "Gemi"
 ];
 
 let odalar = {};
@@ -31,13 +32,23 @@ io.on("connection", (socket) => {
     if (!odalar[odaKodu]) odalar[odaKodu] = [];
     if (!oylar[odaKodu]) oylar[odaKodu] = {};
 
+    // Aynı isimle katılımı engelle
+    const isimVar = odalar[odaKodu].some(o => o.isim === isim);
+    if (isimVar) {
+      socket.emit("hata", "Bu isim zaten kullanılıyor!");
+      return;
+    }
+
     odalar[odaKodu].push({ id: socket.id, isim, oyVerdi: false });
     io.to(odaKodu).emit("oyuncuListesi", odalar[odaKodu]);
   });
 
   socket.on("oyunuBaslat", (odaKodu) => {
     const oyuncular = odalar[odaKodu];
-    if (!oyuncular) return;
+    if (!oyuncular || oyuncular.length < 2) {
+      socket.emit("hata", "Oyunu başlatmak için en az 2 oyuncu gerekiyor!");
+      return;
+    }
 
     // Tüm oyuncuların oy bilgisini sıfırla
     oyuncular.forEach(o => o.oyVerdi = false);
@@ -58,24 +69,41 @@ io.on("connection", (socket) => {
   });
 
   socket.on("oyVer", ({ odaKodu, hedefId }) => {
+    if (!odalar[odaKodu]) return;
+    
     const oyuncular = odalar[odaKodu];
     const oyuKullanan = oyuncular.find(o => o.id === socket.id);
     if (!oyuKullanan) return;
 
-    // Oy geri alma
-    if (hedefId === null) {
-      for (let id in oylar[odaKodu]) {
-        if (id === socket.id) continue;
+    // Önce bu oyuncunun önceki oyunu varsa temizle
+    for (let hedef in oylar[odaKodu]) {
+      if (oylar[odaKodu][hedef] && oylar[odaKodu][hedef].includes(socket.id)) {
+        oylar[odaKodu][hedef] = oylar[odaKodu][hedef].filter(id => id !== socket.id);
+        if (oylar[odaKodu][hedef].length === 0) {
+          delete oylar[odaKodu][hedef];
+        }
       }
-      oyuKullanan.oyVerdi = false;
-    } else {
-      if (oyuKullanan.oyVerdi) return; // sadece 1 kere oy
-      oylar[odaKodu][hedefId] = (oylar[odaKodu][hedefId] || 0) + 1;
+    }
+
+    // Yeni oyu kaydet
+    if (hedefId && hedefId !== null) {
+      if (!oylar[odaKodu][hedefId]) {
+        oylar[odaKodu][hedefId] = [];
+      }
+      oylar[odaKodu][hedefId].push(socket.id);
       oyuKullanan.oyVerdi = true;
+    } else {
+      oyuKullanan.oyVerdi = false;
+    }
+
+    // Oy sayılarını hesapla
+    const oySayilari = {};
+    for (let hedef in oylar[odaKodu]) {
+      oySayilari[hedef] = oylar[odaKodu][hedef].length;
     }
 
     io.to(odaKodu).emit("oyuncuListesi", oyuncular);
-    io.to(odaKodu).emit("oySonucu", { oylar: oylar[odaKodu] });
+    io.to(odaKodu).emit("oySonucu", { oylar: oySayilari });
   });
 
   // CHAT sistemi
@@ -84,15 +112,34 @@ io.on("connection", (socket) => {
   });
 
   socket.on("disconnect", () => {
-    for (let oda in odalar) {
-      odalar[oda] = odalar[oda].filter(o => o.id !== socket.id);
-      delete oylar[oda]?.[socket.id];
-      io.to(oda).emit("oyuncuListesi", odalar[oda]);
-      io.to(oda).emit("oySonucu", { oylar: oylar[oda] || {} });
+    console.log("Bir oyuncu ayrıldı:", socket.id);
+    for (let odaKodu in odalar) {
+      odalar[odaKodu] = odalar[odaKodu].filter(o => o.id !== socket.id);
+      
+      // Oy bilgilerinden de çıkar
+      for (let hedef in oylar[odaKodu]) {
+        if (oylar[odaKodu][hedef]) {
+          oylar[odaKodu][hedef] = oylar[odaKodu][hedef].filter(id => id !== socket.id);
+          if (oylar[odaKodu][hedef].length === 0) {
+            delete oylar[odaKodu][hedef];
+          }
+        }
+      }
+      
+      io.to(odaKodu).emit("oyuncuListesi", odalar[odaKodu]);
+      
+      // Güncel oy sayılarını hesapla ve gönder
+      const oySayilari = {};
+      for (let hedef in oylar[odaKodu]) {
+        oySayilari[hedef] = oylar[odaKodu][hedef].length;
+      }
+      io.to(odaKodu).emit("oySonucu", { oylar: oySayilari });
     }
   });
 });
 
-server.listen(3000, () => {
-  console.log("Sunucu 3000 portunda çalışıyor...");
+const PORT = process.env.PORT || 3000;
+
+server.listen(PORT, () => {
+  console.log(`Sunucu ${PORT} portunda çalışıyor...`);
 });
